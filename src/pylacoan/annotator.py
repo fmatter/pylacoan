@@ -7,8 +7,12 @@ import questionary
 import sys
 from pyigt import IGT
 import logging
+from segments import Tokenizer, Profile
+import re
+
 
 log = logging.getLogger(__name__)
+
 
 def pad_ex(obj, gloss, tuple=False, as_list=False):
     out_obj = []
@@ -115,7 +119,29 @@ class Annotator:
             self.parse(row)
         jsonlib.dump(self.approved, self.approved_path)
 
+@define
+class Segmentizer(Annotator):
+    segments: list = []
+    tokenize: bool = True
+    ignore: list = []
+    delete: list = []
+    col: str = "IPA"
+    profile: Profile = None
+    tokenizer: Tokenizer = None
+    word_sep: str = " "
+    input_col: str = "Orthographic"
+    output_col: str = "IPA"
 
+    def __attrs_post_init__(self):
+        self.profile = Profile(*self.segments + [{"Grapheme": ig, self.col: ig} for ig in self.ignore] + [{"Grapheme": de, self.col: ""} for de in self.delete])
+        self.tokenizer = Tokenizer(self.profile)
+
+    def parse(self, record):
+        if self.tokenize:
+            record[self.output_col] = re.sub(' +', ' ', self.tokenizer(record, column=self.col))
+        else:
+            record[self.output_col] = self.tokenizer(record[self.input_col], column=self.col, segment_separator="", separator=self.word_sep)
+        return record
 @define
 class UniParser(Annotator):
 
@@ -138,7 +164,9 @@ class UniParser(Annotator):
             self.analyzer = Analyzer()
             self.analyzer.lexFile = Path(ana_path, "lexemes.txt")
             self.analyzer.paradigmFile = Path(ana_path, "paradigms.txt")
-            self.analyzer.cliticFile = Path(ana_path, "clitics.txt")
+            clitic_path = Path(ana_path, "clitics.txt")
+            if clitic_path.is_file():
+                self.analyzer.cliticFile = clitic_path
             self.analyzer.load_grammar()
 
     def parse_word(self, word):
@@ -151,6 +179,9 @@ class UniParser(Annotator):
 
     def parse(self, record):
         log.info(f"""Parsing *{record[self.parse_col]}* ({record[self.id_s]})""")
+        if self.trans not in record:
+            log.info(f"No column {self.trans}, adding...")
+            record[self.trans] = "Missing_Translation"
         if not self.overwrite_fields:
             for field_name in [self.obj, self.gloss]:
                 if field_name in record:

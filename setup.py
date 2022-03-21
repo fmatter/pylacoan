@@ -39,7 +39,7 @@ setup(
     keywords="pylacoan",
     name="pylacoan",
     package_dir={"": "src"},
-    packages=find_packages(where="src",include=["pylacoan", "pylacoan.*"]),
+    packages=find_packages(where="src", include=["pylacoan", "pylacoan.*"]),
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/fmatter/pylacoan",

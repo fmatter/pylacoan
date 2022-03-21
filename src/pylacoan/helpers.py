@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 def get_morph_id(id_list, id_dic, obj, gloss=""):
     """Identifies which ID belongs to a given morph.
-    
+
     :param id_list: a list of ID strings, one of which is thought to belong to the morph
     :type id_list: list
     :param id_dic: a dict mapping ID strings to strings of the format <obj:morph>

@@ -16,3 +16,4 @@ uritemplate==4.1.1
 wcwidth==0.2.5
 uniparser-morph>=2.4.3
 pyigt>=1.2.0
+cookiecutter>=1.7.3
