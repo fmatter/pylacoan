@@ -140,17 +140,7 @@ class Segmentizer(Annotator):
         self.tokenizer = Tokenizer(self.profile)
 
     def parse(self, record):
-        if self.tokenize:
-            record[self.output_col] = re.sub(
-                " +", " ", self.tokenizer(record, column=self.col)
-            )
-        else:
-            record[self.output_col] = self.tokenizer(
-                record[self.input_col],
-                column=self.col,
-                segment_separator="",
-                separator=self.word_sep,
-            )
+        record[self.output_col] = self.parse_string(record[self.input_col])
         return record
 
     def parse_string(self, str):
