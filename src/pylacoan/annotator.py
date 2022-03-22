@@ -4,8 +4,6 @@ import pandas as pd
 from pathlib import Path
 from clldutils import jsonlib
 import questionary
-import sys
-from pyigt import IGT
 import logging
 from segments import Tokenizer, Profile
 import re
@@ -119,6 +117,7 @@ class Annotator:
             self.parse(row)
         jsonlib.dump(self.approved, self.approved_path)
 
+
 @define
 class Segmentizer(Annotator):
     segments: list = []
@@ -133,15 +132,41 @@ class Segmentizer(Annotator):
     output_col: str = "IPA"
 
     def __attrs_post_init__(self):
-        self.profile = Profile(*self.segments + [{"Grapheme": ig, self.col: ig} for ig in self.ignore] + [{"Grapheme": de, self.col: ""} for de in self.delete])
+        self.profile = Profile(
+            *self.segments
+            + [{"Grapheme": ig, self.col: ig} for ig in self.ignore]
+            + [{"Grapheme": de, self.col: ""} for de in self.delete]
+        )
         self.tokenizer = Tokenizer(self.profile)
 
     def parse(self, record):
         if self.tokenize:
-            record[self.output_col] = re.sub(' +', ' ', self.tokenizer(record, column=self.col))
+            record[self.output_col] = re.sub(
+                " +", " ", self.tokenizer(record, column=self.col)
+            )
         else:
-            record[self.output_col] = self.tokenizer(record[self.input_col], column=self.col, segment_separator="", separator=self.word_sep)
+            record[self.output_col] = self.tokenizer(
+                record[self.input_col],
+                column=self.col,
+                segment_separator="",
+                separator=self.word_sep,
+            )
         return record
+
+    def parse_string(self, str):
+        if self.tokenize:
+            return re.sub(
+                " +", " ", self.tokenizer(str, column=self.col)
+            )
+        else:
+            return self.tokenizer(
+                str,
+                column=self.col,
+                segment_separator="",
+                separator=self.word_sep,
+            )
+
+
 @define
 class UniParser(Annotator):
 
@@ -178,7 +203,7 @@ class UniParser(Annotator):
         jsonlib.dump(obj=self.approved, path=self.approved_path)
 
     def parse(self, record):
-        log.info(f"""Parsing *{record[self.parse_col]}* ({record[self.id_s]})""")
+        log.info(f"""Parsing {record[self.parse_col]} ({record[self.id_s]})""")
         if self.trans not in record:
             log.info(f"No column {self.trans}, adding...")
             record[self.trans] = "Missing_Translation"
@@ -205,8 +230,8 @@ class UniParser(Annotator):
                     gloss_choices.append(potential_gloss)
                     if record[self.id_s] in self.approved:
                         if (
-                            word_sep.join(potential_gloss)
-                            in self.approved[record][gloss_col]
+                            self.word_sep.join(potential_gloss)
+                            in self.approved[record][self.gloss_col]
                         ):
                             log.info(
                                 f"""Using past analysis '{analysis.gloss}' for *{analysis.wf}* in {record["ID"]}"""

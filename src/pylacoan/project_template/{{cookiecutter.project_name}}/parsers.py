@@ -1,4 +1,4 @@
-from pylacoan import Parser, UniParser, run_pipeline
+from pylacoan import Annotator, UniParser, run_pipeline
 
 # You can define your own parser classes here, inheriting from Parser
 # Then call run_pipeline as shown below

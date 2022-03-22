@@ -5,7 +5,6 @@ Initialize a new pylocan project.
 
 from cookiecutter.main import cookiecutter
 from cookiecutter.exceptions import OutputDirExistsException
-from clldutils.clilib import PathType
 import pathlib
 import pylacoan
 

@@ -7,9 +7,11 @@ log = logging.getLogger(__name__)
 def get_morph_id(id_list, id_dic, obj, gloss=""):
     """Identifies which ID belongs to a given morph.
 
-    :param id_list: a list of ID strings, one of which is thought to belong to the morph
+    :param id_list: a list of ID strings, one of which is thought to
+    belong to the morph
     :type id_list: list
-    :param id_dic: a dict mapping ID strings to strings of the format <obj:morph>
+    :param id_dic: a dict mapping ID strings to strings of
+    the format <obj:morph>
     :type id_dic: dict
     :param obj: the string representation of the morph's form
     :type obj: str
@@ -33,9 +35,12 @@ def get_morph_id(id_list, id_dic, obj, gloss=""):
 
 
 def sort_uniparser_ids(id_list, obj, gloss, id_dic):
-    """Used for sorting the unsorted ID annotations by `uniparser <https://uniparser-morph.readthedocs.io/en/latest/paradigms.html#morpheme-ids>`_.
-    There will be a glossed word form with segmented object and gloss lines, as well as an unordered list of IDs.
-    This method uses a dictionary matching IDs to <"form:gloss"> strings to sort this ID list, based on the segmented object and glossing lines.
+    """Used for sorting the unsorted ID annotations by`uniparser
+    <https://uniparser-morph.readthedocs.io/en/latest/paradigms.html#morpheme-ids>`_.
+    There will be a glossed word form with segmented object and gloss lines, as
+    well as an unordered list of IDs.
+    This method uses a dictionary matching IDs to <"form:gloss"> strings to
+    sort this ID list, based on the segmented object and glossing lines.
 
     """
     igt = IGT(phrase=obj, gloss=gloss)

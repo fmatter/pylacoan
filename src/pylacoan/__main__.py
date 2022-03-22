@@ -4,6 +4,7 @@ from clldutils.loglib import Logging
 import pylacoan
 import pylacoan.commands
 import contextlib
+import sys
 
 
 def main(args=None, catch_all=False, parsed_args=None, log=None):

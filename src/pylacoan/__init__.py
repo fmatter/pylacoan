@@ -7,13 +7,8 @@ __email__ = "florianmatter@gmail.com"
 __version__ = "0.0.1"
 
 import colorlog
-import sys
 import logging
 
-""""""
-import sys
-import logging
-import colorlog
 
 level = logging.DEBUG
 logging.basicConfig(level=level)
