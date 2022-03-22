@@ -31,7 +31,6 @@ def get_morph_id(id_list, id_dic, obj, gloss=""):
             raise ValueError(f"ID {id} not found in id_dic")
         if id_dic[id] == test_str:
             return id
-    return None
 
 
 def sort_uniparser_ids(id_list, obj, gloss, id_dic):
