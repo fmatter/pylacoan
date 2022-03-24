@@ -170,13 +170,19 @@ class UniParser(Annotator):
     gloss: str = "Gloss"
     gramm: str = "Gramm"
     overwrite_fields: bool = False
+    unparsable_path: str = None
     unparsable: list = []
     punctuation: list = ['"', ","]
     lexFile: str = None
     paradigmFile: str = None
 
+    def _define_unparsable(self):
+        if not self.unparsable_path:
+            self.unparsable_path = self.name + "_unparsable.txt"
+
     def __attrs_post_init__(self):
         self.define_approved()
+        self._define_unparsable()
         if isinstance(self.analyzer, str):
             ana_path = self.analyzer
             self.analyzer = Analyzer()
@@ -197,7 +203,7 @@ class UniParser(Annotator):
         return self.analyzer.analyze_words(word)
 
     def write(self):
-        with open(f"{self.name}_unparsable.txt", "w") as f:
+        with open(f"{self.unparsable_path}", "w") as f:
             f.write("\n".join(set(self.unparsable)))
         jsonlib.dump(obj=self.approved, path=self.approved_path)
 
