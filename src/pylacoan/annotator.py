@@ -237,7 +237,7 @@ class UniParser(Annotator):
                     if record[self.id_s] in self.approved:
                         if (
                             self.word_sep.join(potential_gloss)
-                            in self.approved[record][self.gloss_col]
+                            in self.approved[record["ID"]][self.gloss]
                         ):
                             log.info(
                                 f"""Using past analysis '{analysis.gloss}' for *{analysis.wf}* in {record["ID"]}"""
@@ -285,4 +285,5 @@ class UniParser(Annotator):
         record[self.gramm] = self.word_sep.join(gramms)
         if self.interactive:
             self.approved[record[self.id_s]] = dict(record)
+            jsonlib.dump(self.approved, self.approved_path)
         return record
