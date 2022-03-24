@@ -265,7 +265,7 @@ class UniParser(Annotator):
             else:
                 analysis = analyses[0]
             if analysis.wfGlossed == "":
-                log.warning(f"Unparsable: {analysis.wf}")
+                log.warning(f"Unparsable: {analysis.wf} in {record['ID']}:\n{record[self.parse_col]}\n‘{record[self.trans]}’")
                 objs.append(analysis.wf)
                 glosses.append("***")
                 gramms.append("?")
@@ -274,10 +274,10 @@ class UniParser(Annotator):
                 objs.append(analysis.wfGlossed)
                 glosses.append(analysis.gloss)
                 gramms.append(analysis.gramm)
-        log.info(
-            "\n" + pad_ex(" ".join(objs), " ".join(glosses)) + "\n" +
-            "‘" + record[self.trans] + "’"
-        )
+        pretty_record = ("\n" + pad_ex(" ".join(objs), " ".join(glosses)) + 
+                    "\n" + 
+                    "‘" + record[self.trans] + "’")
+        log.info(pretty_record)
         record[self.obj] = self.word_sep.join(objs)
         record[self.gloss] = self.word_sep.join(glosses)
         record[self.gramm] = self.word_sep.join(gramms)
