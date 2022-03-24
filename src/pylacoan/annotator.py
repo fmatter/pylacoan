@@ -225,13 +225,13 @@ class UniParser(Annotator):
             if word.strip() == "":
                 continue
             analyses = self.parse_word(word)
-            if len(analyses) > 1 and self.interactive:
+            if len(analyses) > 1:
                 found_past = False
                 obj_choices = []
                 gloss_choices = []
-                for analysis in analyses:
-                    potential_obj = objs + [analysis.wfGlossed]
-                    potential_gloss = glosses + [analysis.gloss]
+                for potential_analysis in analyses:
+                    potential_obj = objs + [potential_analysis.wfGlossed]
+                    potential_gloss = glosses + [potential_analysis.gloss]
                     obj_choices.append(potential_obj)
                     gloss_choices.append(potential_gloss)
                     if record[self.id_s] in self.approved:
@@ -240,41 +240,40 @@ class UniParser(Annotator):
                             in self.approved[record["ID"]][self.gloss]
                         ):
                             log.info(
-                                f"""Using past analysis '{analysis.gloss}' for *{analysis.wf}* in {record["ID"]}"""
+                                f"""Using past analysis '{potential_analysis.gloss}' for *{potential_analysis.wf}* in {record["ID"]}"""
                             )
-                            objs.append(analysis.wfGlossed)
-                            glosses.append(analysis.gloss)
+                            analysis = potential_analysis
                             found_past = True
                 if not found_past:
-                    answers = []
-                    for i, (obj, gloss) in enumerate(zip(obj_choices, gloss_choices)):
-                        pad_obj, pad_gloss = pad_ex(
-                            obj, gloss, as_list=True, tuple=True
-                        )
-                        answers.append(f"({i+1}) " + pad_obj + "\n       " + pad_gloss)
-                    andic = {answer: i for i, answer in enumerate(answers)}
-                    choice = questionary.select(
-                        f""
-                        f"Ambiguity while parsing *{word}*. Choose correct analysis for '{record[self.trans]}'"
-                        "",
-                        choices=answers,
-                    ).ask()
-                    analysis = analyses[andic[choice]]
-                    objs.append(analysis.wfGlossed)
-                    glosses.append(analysis.gloss)
-                    gramms.append(analysis.gramm)
+                    if self.interactive:
+                        answers = []
+                        for i, (obj, gloss) in enumerate(zip(obj_choices, gloss_choices)):
+                            pad_obj, pad_gloss = pad_ex(
+                                obj, gloss, as_list=True, tuple=True
+                            )
+                            answers.append(f"({i+1}) " + pad_obj + "\n       " + pad_gloss)
+                        andic = {answer: i for i, answer in enumerate(answers)}
+                        choice = questionary.select(
+                            f""
+                            f"Ambiguity while parsing *{word}*. Choose correct analysis for '{record[self.trans]}'"
+                            "",
+                            choices=answers,
+                        ).ask()
+                        analysis = analyses[andic[choice]]
+                    else:
+                        analysis = analyses[0]
             else:
                 analysis = analyses[0]
-                if analysis.wfGlossed == "":
-                    log.warning(f"Unparsable: {analysis.wf}")
-                    objs.append(analysis.wf)
-                    glosses.append("***")
-                    gramms.append("?")
-                    self.unparsable.append(analysis.wf)
-                else:
-                    objs.append(analysis.wfGlossed)
-                    glosses.append(analysis.gloss)
-                    gramms.append(analysis.gramm)
+            if analysis.wfGlossed == "":
+                log.warning(f"Unparsable: {analysis.wf}")
+                objs.append(analysis.wf)
+                glosses.append("***")
+                gramms.append("?")
+                self.unparsable.append(analysis.wf)
+            else:
+                objs.append(analysis.wfGlossed)
+                glosses.append(analysis.gloss)
+                gramms.append(analysis.gramm)
         print(
             pad_ex(" ".join(objs), " ".join(glosses)),
             "‘" + record[self.trans] + "’",
