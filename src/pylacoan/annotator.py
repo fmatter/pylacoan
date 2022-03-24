@@ -90,6 +90,7 @@ class Annotator:
     approved_path: str = None
     out_file: str = None
     writer = None
+    interactive: bool = True
 
     def define_out_file(self):
         if not self.out_file:
@@ -109,13 +110,14 @@ class Annotator:
         return input
 
     def write(self):
+        if self.interactive and self.approved != {}:
+            jsonlib.dump(self.approved, self.approved_path)
         pass
 
     def parse_csv(self, file):
         df = pd.read_csv(file, keep_default_na=False)
         for i, row in df.iterrows():
             self.parse(row)
-        jsonlib.dump(self.approved, self.approved_path)
 
 
 @define
@@ -160,7 +162,6 @@ class Segmentizer(Annotator):
 @define
 class UniParser(Annotator):
 
-    interactive: bool = True
     prefer: str = "any"
     analyzer: str = "."
     word_sep: str = " "
@@ -205,7 +206,8 @@ class UniParser(Annotator):
     def write(self):
         with open(f"{self.unparsable_path}", "w") as f:
             f.write("\n".join(set(self.unparsable)))
-        jsonlib.dump(obj=self.approved, path=self.approved_path)
+        if self.interactive:
+            jsonlib.dump(obj=self.approved, path=self.approved_path)
 
     def parse(self, record):
         log.info(f"""Parsing {record[self.parse_col]} ({record[self.id_s]})""")
@@ -220,6 +222,8 @@ class UniParser(Annotator):
         objs = []
         glosses = []
         gramms = []
+        unparsable = []
+        gained_approval = False
         for word in record[self.parse_col].split(self.word_sep):
             word = word.strip("".join(self.punctuation))
             if word.strip() == "":
@@ -260,28 +264,32 @@ class UniParser(Annotator):
                             choices=answers,
                         ).ask()
                         analysis = analyses[andic[choice]]
+                        gained_approval = True
                     else:
                         analysis = analyses[0]
             else:
                 analysis = analyses[0]
             if analysis.wfGlossed == "":
-                log.warning(f"Unparsable: {analysis.wf} in {record['ID']}:\n{record[self.parse_col]}\n‘{record[self.trans]}’")
+                unparsable.append(analysis.wf)
                 objs.append(analysis.wf)
                 glosses.append("***")
                 gramms.append("?")
-                self.unparsable.append(analysis.wf)
+                unparsable.append(analysis.wf)
             else:
                 objs.append(analysis.wfGlossed)
                 glosses.append(analysis.gloss)
                 gramms.append(analysis.gramm)
-        pretty_record = ("\n" + pad_ex(" ".join(objs), " ".join(glosses)) + 
+        pretty_record = (pad_ex(" ".join(objs), " ".join(glosses)) + 
                     "\n" + 
                     "‘" + record[self.trans] + "’")
-        log.info(pretty_record)
+        if len(unparsable) > 1:
+            log.warning(f"Unparsable: {', '.join(unparsable)} in {record['ID']}:\n{pretty_record}")
+        else:
+            log.info("\n"+pretty_record)
         record[self.obj] = self.word_sep.join(objs)
         record[self.gloss] = self.word_sep.join(glosses)
         record[self.gramm] = self.word_sep.join(gramms)
-        if self.interactive:
+        if self.interactive and gained_approval:
             self.approved[record[self.id_s]] = dict(record)
             jsonlib.dump(self.approved, self.approved_path)
         return record
