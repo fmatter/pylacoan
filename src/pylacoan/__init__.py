@@ -10,7 +10,7 @@ import colorlog
 import logging
 
 
-level = logging.DEBUG
+level = logging.WARNING
 logging.basicConfig(level=level)
 handler = colorlog.StreamHandler(None)
 handler.setFormatter(
