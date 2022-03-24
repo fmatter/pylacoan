@@ -274,10 +274,9 @@ class UniParser(Annotator):
                 objs.append(analysis.wfGlossed)
                 glosses.append(analysis.gloss)
                 gramms.append(analysis.gramm)
-        print(
-            pad_ex(" ".join(objs), " ".join(glosses)),
-            "‘" + record[self.trans] + "’",
-            sep="\n",
+        log.info(
+            "\n" + pad_ex(" ".join(objs), " ".join(glosses)) + "\n" +
+            "‘" + record[self.trans] + "’"
         )
         record[self.obj] = self.word_sep.join(objs)
         record[self.gloss] = self.word_sep.join(glosses)
