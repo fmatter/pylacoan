@@ -10,13 +10,10 @@ import colorlog
 import logging
 
 
-level = logging.WARNING
-logging.basicConfig(level=level)
 handler = colorlog.StreamHandler(None)
 handler.setFormatter(
     colorlog.ColoredFormatter("%(log_color)s%(levelname)-7s%(reset)s %(message)s")
 )
 log = logging.getLogger(__name__)
-log.setLevel(level)
 log.propagate = False
 log.addHandler(handler)
