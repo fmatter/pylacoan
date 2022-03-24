@@ -172,6 +172,7 @@ class UniParser(Annotator):
     overwrite_fields: bool = False
     unparsable: list = []
     punctuation: list = ['"', ","]
+    lexFile: str = None
     paradigmFile: str = None
 
     def __attrs_post_init__(self):
@@ -179,7 +180,10 @@ class UniParser(Annotator):
         if isinstance(self.analyzer, str):
             ana_path = self.analyzer
             self.analyzer = Analyzer()
-            self.analyzer.lexFile = Path(ana_path, "lexemes.txt")
+            if not self.lexFile:
+                self.analyzer.lexFile = Path(ana_path, "lexemes.txt")
+            else:
+                self.analyzer.lexFile = self.lexFile
             if not self.paradigmFile:
                 self.analyzer.paradigmFile = Path(ana_path, "paradigms.txt")
             else:
