@@ -124,8 +124,8 @@ class Segmentizer(Annotator):
     tokenize: bool = True
     ignore: list = []
     delete: list = []
-    col: str = "IPA"
     profile: Profile = None
+    profile_col: str = "IPA"
     tokenizer: Tokenizer = None
     word_sep: str = " "
     input_col: str = "Orthographic"
@@ -134,8 +134,8 @@ class Segmentizer(Annotator):
     def __attrs_post_init__(self):
         self.profile = Profile(
             *self.segments
-            + [{"Grapheme": ig, self.col: ig} for ig in self.ignore]
-            + [{"Grapheme": de, self.col: ""} for de in self.delete]
+            + [{"Grapheme": ig, self.profile_col: ig} for ig in self.ignore]
+            + [{"Grapheme": de, self.profile_col: ""} for de in self.delete]
         )
         self.tokenizer = Tokenizer(self.profile)
 
@@ -146,12 +146,12 @@ class Segmentizer(Annotator):
     def parse_string(self, str):
         if self.tokenize:
             return re.sub(
-                " +", " ", self.tokenizer(str, column=self.col)
+                " +", " ", self.tokenizer(str, column=self.profile_col)
             )
         else:
             return self.tokenizer(
                 str,
-                column=self.col,
+                column=self.profile_col,
                 segment_separator="",
                 separator=self.word_sep,
             )
@@ -168,6 +168,7 @@ class UniParser(Annotator):
     trans: str = "Translated_Text"
     obj: str = "Analyzed_Word"
     gloss: str = "Gloss"
+    gramm: str = "Gramm"
     overwrite_fields: bool = False
     unparsable: list = []
     punctuation: list = ['"', ","]
@@ -204,6 +205,7 @@ class UniParser(Annotator):
                     raise FieldExistsException
         objs = []
         glosses = []
+        gramms = []
         for word in record[self.parse_col].split(self.word_sep):
             word = word.strip("".join(self.punctuation))
             if word.strip() == "":
@@ -246,16 +248,19 @@ class UniParser(Annotator):
                     analysis = analyses[andic[choice]]
                     objs.append(analysis.wfGlossed)
                     glosses.append(analysis.gloss)
+                    gramms.append(analysis.gramm)
             else:
                 analysis = analyses[0]
                 if analysis.wfGlossed == "":
                     log.warning(f"Unparsable: {analysis.wf}")
                     objs.append(analysis.wf)
                     glosses.append("***")
+                    gramms.append("?")
                     self.unparsable.append(analysis.wf)
                 else:
                     objs.append(analysis.wfGlossed)
                     glosses.append(analysis.gloss)
+                    gramms.append(analysis.gramm)
         print(
             pad_ex(" ".join(objs), " ".join(glosses)),
             "‘" + record[self.trans] + "’",
@@ -263,6 +268,7 @@ class UniParser(Annotator):
         )
         record[self.obj] = self.word_sep.join(objs)
         record[self.gloss] = self.word_sep.join(glosses)
+        record[self.gramm] = self.word_sep.join(gramms)
         if self.interactive:
             self.approved[record[self.id_s]] = dict(record)
         return record
