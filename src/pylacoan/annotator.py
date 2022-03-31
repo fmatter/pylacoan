@@ -274,7 +274,6 @@ class UniParser(Annotator):
                 objs.append(analysis.wf)
                 glosses.append("***")
                 gramms.append("?")
-                unparsable.append(analysis.wf)
             else:
                 objs.append(analysis.wfGlossed)
                 glosses.append(analysis.gloss)
