@@ -176,6 +176,7 @@ class UniParser(Annotator):
     punctuation: list = ['"', ","]
     lexFile: str = None
     paradigmFile: str = None
+    delAnaFile: str = None
 
     def _define_unparsable(self):
         if not self.unparsable_path:
@@ -195,6 +196,10 @@ class UniParser(Annotator):
                 self.analyzer.paradigmFile = Path(ana_path, "paradigms.txt")
             else:
                 self.analyzer.paradigmFile = self.paradigmFile
+            if not self.delAnaFile:
+                self.analyzer.delAnaFile = Path(ana_path, "bad_analyses.txt")
+            else:
+                self.analyzer.delAnaFile = self.delAnaFile
             clitic_path = Path(ana_path, "clitics.txt")
             if clitic_path.is_file():
                 self.analyzer.cliticFile = clitic_path
