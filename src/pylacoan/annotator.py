@@ -147,9 +147,7 @@ class Segmentizer(Annotator):
 
     def parse_string(self, str):
         if self.tokenize:
-            return re.sub(
-                " +", " ", self.tokenizer(str, column=self.profile_col)
-            )
+            return re.sub(" +", " ", self.tokenizer(str, column=self.profile_col))
         else:
             return self.tokenizer(
                 str,
@@ -167,6 +165,13 @@ class UniParser(Annotator):
     word_sep: str = " "
     parse_col: str = "Sentence"
     trans: str = "Translated_Text"
+    uniparser_fields: dict = {
+        "Analyzed_Word": "wfGlossed",
+        "Gloss": "gloss",
+        "Lemmata": "lemma",
+        "Gramm": "gramm",
+        "Morpheme_IDs": "id"
+    }
     obj: str = "Analyzed_Word"
     gloss: str = "Gloss"
     gramm: str = "Gramm"
@@ -177,6 +182,22 @@ class UniParser(Annotator):
     lexFile: str = None
     paradigmFile: str = None
     delAnaFile: str = None
+
+    def _get_field(self, wf, field):
+        field_dic = {
+            "wf": wf.wf,
+            "wfGlossed": wf.wfGlossed,
+            "gloss": wf.gloss,
+            "lemma": wf.lemma,
+            "gramm": wf.gramm,
+        }
+        if field not in field_dic:
+            for f, v in wf.otherData:
+                if f==field:
+                    return v
+            return ""
+        else:
+            return field_dic[field]
 
     def _define_unparsable(self):
         if not self.unparsable_path:
@@ -220,13 +241,13 @@ class UniParser(Annotator):
             log.info(f"No column {self.trans}, adding...")
             record[self.trans] = "Missing_Translation"
         if not self.overwrite_fields:
-            for field_name in [self.obj, self.gloss]:
+            for field_name in self._get_field(None).keys():
                 if field_name in record:
                     log.error(f"Field '{field_name}' already exists")
                     raise FieldExistsException
-        objs = []
-        glosses = []
-        gramms = []
+        added_fields = {}
+        for field_name in self.uniparser_fields.values():
+            added_fields[field_name] = []
         unparsable = []
         gained_approval = False
         for word in record[self.parse_col].split(self.word_sep):
@@ -239,8 +260,8 @@ class UniParser(Annotator):
                 obj_choices = []
                 gloss_choices = []
                 for potential_analysis in analyses:
-                    potential_obj = objs + [potential_analysis.wfGlossed]
-                    potential_gloss = glosses + [potential_analysis.gloss]
+                    potential_obj = added_fields["wfGlossed"] + [potential_analysis.wfGlossed]
+                    potential_gloss = added_fields["gloss"] + [potential_analysis.gloss]
                     obj_choices.append(potential_obj)
                     gloss_choices.append(potential_gloss)
                     if record[self.id_s] in self.approved:
@@ -256,11 +277,15 @@ class UniParser(Annotator):
                 if not found_past:
                     if self.interactive:
                         answers = []
-                        for i, (obj, gloss) in enumerate(zip(obj_choices, gloss_choices)):
+                        for i, (obj, gloss) in enumerate(
+                            zip(obj_choices, gloss_choices)
+                        ):
                             pad_obj, pad_gloss = pad_ex(
                                 obj, gloss, as_list=True, tuple=True
                             )
-                            answers.append(f"({i+1}) " + pad_obj + "\n       " + pad_gloss)
+                            answers.append(
+                                f"({i+1}) " + pad_obj + "\n       " + pad_gloss
+                            )
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
                             f""
@@ -276,23 +301,26 @@ class UniParser(Annotator):
                 analysis = analyses[0]
             if analysis.wfGlossed == "":
                 unparsable.append(analysis.wf)
-                objs.append(analysis.wf)
-                glosses.append("***")
-                gramms.append("?")
+                for field_name in self.uniparser_fields.values():
+                    added_fields[field_name].append("***")
             else:
-                objs.append(analysis.wfGlossed)
-                glosses.append(analysis.gloss)
-                gramms.append(analysis.gramm)
-        pretty_record = (pad_ex(" ".join(objs), " ".join(glosses)) + 
-                    "\n" + 
-                    "‘" + record[self.trans] + "’")
+                for field_name in self.uniparser_fields.values():
+                    added_fields[field_name].append(self._get_field(analysis, field_name))
+        pretty_record = (
+            pad_ex(" ".join(added_fields["wfGlossed"]), " ".join(added_fields["gloss"]))
+            + "\n"
+            + "‘"
+            + record[self.trans]
+            + "’"
+        )
         if len(unparsable) > 1:
-            log.warning(f"Unparsable: {', '.join(unparsable)} in {record['ID']}:\n{pretty_record}")
+            log.warning(
+                f"Unparsable: {', '.join(unparsable)} in {record['ID']}:\n{pretty_record}"
+            )
         else:
-            log.info("\n"+pretty_record)
-        record[self.obj] = self.word_sep.join(objs)
-        record[self.gloss] = self.word_sep.join(glosses)
-        record[self.gramm] = self.word_sep.join(gramms)
+            log.info("\n" + pretty_record)
+        for output_name, field_name in self.uniparser_fields.items():
+            record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record[self.id_s]] = dict(record)
             jsonlib.dump(self.approved, self.approved_path)
