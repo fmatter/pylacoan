@@ -325,5 +325,5 @@ class UniParser(Annotator):
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record[self.id_s]] = dict(record)
-            jsonlib.dump(self.approved, self.approved_path)
+            jsonlib.dump(self.approved, self.approved_path, indent=4, ensure_ascii=False)
         return record
