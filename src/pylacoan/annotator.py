@@ -288,7 +288,7 @@ class UniParser(Annotator):
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
                             f""
-                            f"Ambiguity while parsing *{word}*. Choose correct analysis for '{record[self.trans]}'"
+                            f"{record[self.id_s]}: ambiguity while parsing *{word}*. Choose correct analysis for\n{record[self.parse_col]}\n'{record[self.trans]}'"
                             "",
                             choices=answers,
                         ).ask()
