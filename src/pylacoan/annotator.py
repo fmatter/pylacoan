@@ -170,7 +170,6 @@ class UniParser(Annotator):
         "Gloss": "gloss",
         "Lemmata": "lemma",
         "Gramm": "gramm",
-        "Morpheme_IDs": "id"
     }
     obj: str = "Analyzed_Word"
     gloss: str = "Gloss"
@@ -241,7 +240,7 @@ class UniParser(Annotator):
             log.info(f"No column {self.trans}, adding...")
             record[self.trans] = "Missing_Translation"
         if not self.overwrite_fields:
-            for field_name in self._get_field(None).keys():
+            for field_name in self.uniparser_fields.keys():
                 if field_name in record:
                     log.error(f"Field '{field_name}' already exists")
                     raise FieldExistsException
