@@ -301,7 +301,10 @@ class UniParser(Annotator):
             if analysis.wfGlossed == "":
                 unparsable.append(analysis.wf)
                 for field_name in self.uniparser_fields.values():
-                    added_fields[field_name].append("***")
+                    if field_name == "wfGlossed":
+                        added_fields[field_name].append(analysis.wf)
+                    else:
+                        added_fields[field_name].append("***")
             else:
                 for field_name in self.uniparser_fields.values():
                     added_fields[field_name].append(self._get_field(analysis, field_name))
