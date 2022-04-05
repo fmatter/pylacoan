@@ -7,7 +7,7 @@ import questionary
 import logging
 from segments import Tokenizer, Profile
 import re
-
+from pylacoan.helpers import ortho_strip
 
 log = logging.getLogger(__name__)
 
@@ -249,7 +249,7 @@ class UniParser(Annotator):
             added_fields[field_name] = []
         unparsable = []
         gained_approval = False
-        all_analyses = self.parse_word(record[self.parse_col].split(self.word_sep))
+        all_analyses = self.parse_word(ortho_strip(record[self.parse_col]).strip(self.word_sep).split(self.word_sep))
         for wf_analysis in all_analyses:
             if len(wf_analysis) > 1:
                 found_past = False
@@ -312,7 +312,7 @@ class UniParser(Annotator):
             + record[self.trans]
             + "’"
         )
-        if len(unparsable) > 1:
+        if len(unparsable) > 0:
             log.warning(
                 f"Unparsable: {', '.join(unparsable)} in {record['ID']}:\n{pretty_record}"
             )

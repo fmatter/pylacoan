@@ -51,7 +51,7 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic):
     return sorted_ids
 
 
-punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘"]
+punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", "\""]
 
 
 def ortho_strip(str, exceptions=[], additions=[]):
