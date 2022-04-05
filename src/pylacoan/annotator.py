@@ -225,8 +225,8 @@ class UniParser(Annotator):
                 self.analyzer.cliticFile = clitic_path
             self.analyzer.load_grammar()
 
-    def parse_word(self, word):
-        return self.analyzer.analyze_words(word)
+    def parse_word(self, word, **kwargs):
+        return self.analyzer.analyze_words(word, **kwargs)
 
     def write(self):
         with open(f"{self.unparsable_path}", "w") as f:
