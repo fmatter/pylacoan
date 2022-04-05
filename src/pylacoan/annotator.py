@@ -249,16 +249,13 @@ class UniParser(Annotator):
             added_fields[field_name] = []
         unparsable = []
         gained_approval = False
-        for word in record[self.parse_col].split(self.word_sep):
-            word = word.strip("".join(self.punctuation))
-            if word.strip() == "":
-                continue
-            analyses = self.parse_word(word)
-            if len(analyses) > 1:
+        all_analyses = self.parse_word(record[self.parse_col].split(self.word_sep))
+        for wf_analysis in all_analyses:
+            if len(wf_analysis) > 1:
                 found_past = False
                 obj_choices = []
                 gloss_choices = []
-                for potential_analysis in analyses:
+                for potential_analysis in wf_analysis:
                     potential_obj = added_fields["wfGlossed"] + [potential_analysis.wfGlossed]
                     potential_gloss = added_fields["gloss"] + [potential_analysis.gloss]
                     obj_choices.append(potential_obj)
@@ -288,16 +285,16 @@ class UniParser(Annotator):
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
                             f""
-                            f"{record[self.id_s]}: ambiguity while parsing *{word}*. Choose correct analysis for\n{record[self.parse_col]}\n'{record[self.trans]}'"
+                            f"{record[self.id_s]}: ambiguity while parsing *{wf_analysis[0].wf}*. Choose correct analysis for\n{record[self.parse_col]}\n'{record[self.trans]}'"
                             "",
                             choices=answers,
                         ).ask()
-                        analysis = analyses[andic[choice]]
+                        analysis = wf_analysis[andic[choice]]
                         gained_approval = True
                     else:
-                        analysis = analyses[0]
+                        analysis = wf_analysis[0]
             else:
-                analysis = analyses[0]
+                analysis = wf_analysis[0]
             if analysis.wfGlossed == "":
                 unparsable.append(analysis.wf)
                 for field_name in self.uniparser_fields.values():
