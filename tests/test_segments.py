@@ -1,4 +1,3 @@
-import pytest
 from pylacoan.annotator import Segmentizer
 import copy
 
