@@ -10,7 +10,7 @@ on:
 
 jobs:
 
-    lint:
+  lint:
     name: Linting build
     runs-on: ubuntu-latest
     strategy:
