@@ -29,8 +29,8 @@ def get_morph_id(id_list, id_dic, obj, gloss=""):
         log.debug(f"testing id {m_id}")
         if m_id not in id_dic:
             raise ValueError(f"ID {m_id} not found in id_dic")
-        if id_dic[m_id] == test_str:
-            return m_id
+        if test_str in id_dic[m_id]:
+            return id_dic[m_id][test_str]
     return None
 
 
@@ -52,7 +52,7 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic):
     return sorted_ids
 
 
-punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", '"']
+punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", '"', "¡"]
 
 
 def ortho_strip(ortho_str, exceptions=None, additions=None):

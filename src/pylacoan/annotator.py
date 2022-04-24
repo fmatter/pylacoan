@@ -334,6 +334,8 @@ class UniParser(Annotator):
         else:
             log.info(f"\n{pretty_record}")
         for output_name, field_name in self.uniparser_fields.items():
+            if field_name == "id":
+                print(added_fields[field_name])
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record[self.id_s]] = dict(record)

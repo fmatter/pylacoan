@@ -9,18 +9,18 @@ def test_get_morph_id():
         get_morph_id(["1"], {"2": "test"}, "test")
 
     assert (
-        get_morph_id(["id1", "id2"], {"id1": "form", "id2": "nothing"}, obj="form")
-        == "id1"
+        get_morph_id(["morpheme1", "morpheme2"], {"morpheme1": {"form": "morpheme1-1"}, "morpheme2": {"nothing": "morpheme2-1"}}, obj="form")
+        == "morpheme1-1"
     )
 
     assert (
         get_morph_id(
             ["id1", "id2", "id3"],
-            {"id1": "form:meaning", "id2": "nothing:l", "id3": "none"},
+            {"id1": {"form:meaning": "morph1"}, "id2": {"nothing:l": "morph2"}, "id3": {"none": "morph3"}},
             obj="form",
             gloss="meaning",
         )
-        == "id1"
+        == "morph1"
     )
 
 
@@ -28,11 +28,11 @@ def test_sort_uniparser_ids():
     assert sort_uniparser_ids(
         id_list=["imp", "sapsuf", "putv", "3t"],
         id_dic={
-            "imp": "kə:IMP",
-            "3t": "t:3P",
-            "sapsuf": "tə:SAP.PL",
-            "putv": "ɨrɨ:place",
+            "imp": {"kə:IMP": "imp"},
+            "3t": {"t:3P": "3t"},
+            "sapsuf": {"tə:SAP.PL": "sapsuf-1"},
+            "putv": {"ɨrɨ:place": "putv"},
         },
         obj="t-ɨrɨ-tə-kə",
         gloss="3P-place-SAP.PL-IMP",
-    ) == ["3t", "putv", "sapsuf", "imp"]
+    ) == ["3t", "putv", "sapsuf-1", "imp"]
