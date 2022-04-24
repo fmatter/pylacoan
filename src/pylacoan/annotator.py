@@ -301,12 +301,12 @@ class UniParser(Annotator):
                             "",
                             choices=answers,
                         ).ask()
-                        analysis = wf_analysis[andic[choice]]
+                        analysis = wf_analysis[andic[choice]] # pylint: disable=unsubscriptable-object
                         gained_approval = True
                     else:
-                        analysis = wf_analysis[0]
+                        analysis = wf_analysis[0] # pylint: disable=unsubscriptable-object
             else:
-                analysis = wf_analysis[0]
+                analysis = wf_analysis[0] # pylint: disable=unsubscriptable-object
             if analysis.wfGlossed == "":
                 unparsable.append(analysis.wf)
                 for field_name in self.uniparser_fields.values():
@@ -332,7 +332,7 @@ class UniParser(Annotator):
             )
             self.unparsable.extend(unparsable)
         else:
-            log.info("\n" + pretty_record)
+            log.info(f"\n{pretty_record}")
         for output_name, field_name in self.uniparser_fields.items():
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
