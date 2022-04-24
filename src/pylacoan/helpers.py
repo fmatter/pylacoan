@@ -51,11 +51,11 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic):
     return sorted_ids
 
 
-punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", "\""]
+punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", '"']
 
 
 def ortho_strip(str, exceptions=[], additions=[]):
-    punct = [x for x in punctuation+additions if x not in exceptions]
+    punct = [x for x in punctuation + additions if x not in exceptions]
     for p in punct:
         str = str.replace(p, "")
     return str.lower()

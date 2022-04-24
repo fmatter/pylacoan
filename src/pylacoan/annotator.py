@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 from clldutils import jsonlib
 import questionary
+from itertools import groupby
 import logging
 from segments import Tokenizer, Profile
 import re
@@ -192,7 +193,7 @@ class UniParser(Annotator):
         }
         if field not in field_dic:
             for f, v in wf.otherData:
-                if f==field:
+                if f == field:
                     return v
             return ""
         else:
@@ -229,8 +230,13 @@ class UniParser(Annotator):
         return self.analyzer.analyze_words(word, **kwargs)
 
     def write(self):
+        unparsable_counts = [
+            (i, len(list(c))) for i, c in groupby(sorted(self.unparsable))
+        ]
+        unparsable_counts = sorted(unparsable_counts, key=lambda x: x[1], reverse=True)
+        self.unparsable = [x for x, y in unparsable_counts]
         with open(f"{self.unparsable_path}", "w") as f:
-            f.write("\n".join(set(self.unparsable)))
+            f.write("\n".join(self.unparsable))
         if self.interactive:
             jsonlib.dump(obj=self.approved, path=self.approved_path)
 
@@ -249,14 +255,20 @@ class UniParser(Annotator):
             added_fields[field_name] = []
         unparsable = []
         gained_approval = False
-        all_analyses = self.parse_word(ortho_strip(record[self.parse_col]).strip(self.word_sep).split(self.word_sep))
+        all_analyses = self.parse_word(
+            ortho_strip(record[self.parse_col])
+            .strip(self.word_sep)
+            .split(self.word_sep)
+        )
         for wf_analysis in all_analyses:
             if len(wf_analysis) > 1:
                 found_past = False
                 obj_choices = []
                 gloss_choices = []
                 for potential_analysis in wf_analysis:
-                    potential_obj = added_fields["wfGlossed"] + [potential_analysis.wfGlossed]
+                    potential_obj = added_fields["wfGlossed"] + [
+                        potential_analysis.wfGlossed
+                    ]
                     potential_gloss = added_fields["gloss"] + [potential_analysis.gloss]
                     obj_choices.append(potential_obj)
                     gloss_choices.append(potential_gloss)
@@ -304,7 +316,9 @@ class UniParser(Annotator):
                         added_fields[field_name].append("***")
             else:
                 for field_name in self.uniparser_fields.values():
-                    added_fields[field_name].append(self._get_field(analysis, field_name))
+                    added_fields[field_name].append(
+                        self._get_field(analysis, field_name)
+                    )
         pretty_record = (
             pad_ex(" ".join(added_fields["wfGlossed"]), " ".join(added_fields["gloss"]))
             + "\n"
@@ -316,11 +330,14 @@ class UniParser(Annotator):
             log.warning(
                 f"Unparsable: {', '.join(unparsable)} in {record['ID']}:\n{pretty_record}"
             )
+            self.unparsable.extend(unparsable)
         else:
             log.info("\n" + pretty_record)
         for output_name, field_name in self.uniparser_fields.items():
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record[self.id_s]] = dict(record)
-            jsonlib.dump(self.approved, self.approved_path, indent=4, ensure_ascii=False)
+            jsonlib.dump(
+                self.approved, self.approved_path, indent=4, ensure_ascii=False
+            )
         return record
