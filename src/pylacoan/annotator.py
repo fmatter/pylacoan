@@ -159,7 +159,7 @@ class Segmentizer(Annotator):
             )
             if self.complain and "�" in res:
                 log.warning(f"Could not convert {input_str}: {res}")
-            return res 
+            return res
 
 
 @define
@@ -305,12 +305,16 @@ class UniParser(Annotator):
                             "",
                             choices=answers,
                         ).ask()
-                        analysis = wf_analysis[andic[choice]] # pylint: disable=unsubscriptable-object
+                        analysis = wf_analysis[
+                            andic[choice]
+                        ]  # pylint: disable=unsubscriptable-object
                         gained_approval = True
                     else:
-                        analysis = wf_analysis[0] # pylint: disable=unsubscriptable-object
+                        analysis = wf_analysis[
+                            0
+                        ]  # pylint: disable=unsubscriptable-object
             else:
-                analysis = wf_analysis[0] # pylint: disable=unsubscriptable-object
+                analysis = wf_analysis[0]  # pylint: disable=unsubscriptable-object
             if analysis.wfGlossed == "":
                 unparsable.append(analysis.wf)
                 for field_name in self.uniparser_fields.values():
