@@ -133,6 +133,7 @@ class Segmentizer(Annotator):
     word_sep: str = " "
     input_col: str = "Orthographic"
     output_col: str = "IPA"
+    complain: bool = True
 
     def __attrs_post_init__(self):
         self.profile = Profile(
@@ -146,16 +147,19 @@ class Segmentizer(Annotator):
         record[self.output_col] = self.parse_string(record[self.input_col])
         return record
 
-    def parse_string(self, str):
+    def parse_string(self, input_str):
         if self.tokenize:
-            return re.sub(" +", " ", self.tokenizer(str, column=self.profile_col))
+            return re.sub(" +", " ", self.tokenizer(input_str, column=self.profile_col))
         else:
-            return self.tokenizer(
-                str,
+            res = self.tokenizer(
+                input_str,
                 column=self.profile_col,
                 segment_separator="",
                 separator=self.word_sep,
             )
+            if self.complain and "�" in res:
+                log.warning(f"Could not convert {input_str}: {res}")
+            return res 
 
 
 @define
@@ -334,8 +338,6 @@ class UniParser(Annotator):
         else:
             log.info(f"\n{pretty_record}")
         for output_name, field_name in self.uniparser_fields.items():
-            if field_name == "id":
-                print(added_fields[field_name])
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record[self.id_s]] = dict(record)
