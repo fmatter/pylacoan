@@ -1,5 +1,6 @@
-from pyigt import IGT
 import logging
+from pyigt import IGT
+
 
 log = logging.getLogger(__name__)
 

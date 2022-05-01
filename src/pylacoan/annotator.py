@@ -1,14 +1,16 @@
-from attrs import define
-from uniparser_morph import Analyzer
-import pandas as pd
-from pathlib import Path
-from clldutils import jsonlib
-import questionary
-from itertools import groupby
 import logging
-from segments import Tokenizer, Profile
 import re
+from itertools import groupby
+from pathlib import Path
+import pandas as pd
+import questionary
+from attrs import define
+from clldutils import jsonlib
+from segments import Profile
+from segments import Tokenizer
+from uniparser_morph import Analyzer
 from pylacoan.helpers import ortho_strip
+import sys
 
 log = logging.getLogger(__name__)
 
@@ -34,31 +36,42 @@ def pad_ex(obj, gloss, tuple=False, as_list=False):
         return "  ".join(out_obj).strip(" ") + "\n" + "  ".join(out_gloss).strip(" ")
 
 
-OUTPUT_DIR = "output"
-INPUT_DIR = "input"
-
+OUTPUT_DIR = Path("output")
+INPUT_DIR = Path("input")
+IDX_COL = "ID"
 
 def define_file_path(file, base_dir):
     if "/" in file:
-        return Path(file)
+        return [Path(file)]
+    elif file == "all":
+        return [Path(x) for x in base_dir.iterdir() if x.is_file()]
     else:
-        return Path(base_dir, file)
+        return [Path(base_dir, file)]
 
 
-def run_pipeline(file_dict):
-    for file, file_conf in file_dict.items():
-        file_path = define_file_path(file, INPUT_DIR)
-        out_path = define_file_path(file_conf["output_file"], OUTPUT_DIR)
+def run_pipeline(parser_list, in_f, out_f):
+    file_paths = define_file_path(in_f, INPUT_DIR)
+    out_path = OUTPUT_DIR / out_f
+    for file in file_paths:
         if ".csv" in file:
-            df = pd.read_csv(file_path, keep_default_na=False)
-            for parser in file_conf["parsers"]:
+            df = pd.read_csv(file, index_col=IDX_COL, keep_default_na=False)
+            for parser in parser_list:
                 output = []
                 for record in df.to_dict(orient="records"):
                     output.append(parser.parse(record))
                 df = pd.DataFrame.from_dict(output)
                 parser.write()
-        df.to_csv(out_path, index=False)
+    df.to_csv(out_path, index=False)
 
+def reparse(parser_list, out_f, record_id):
+    df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
+    if record_id not in df.index:
+        log.error(f"No record with the ID {record_id} found in {out_f}")
+        sys.exit(1)
+    record = df.loc[record_id]
+    for parser in parser_list:
+        df.loc[record.name] = parser.parse(record)
+    df.to_csv(OUTPUT_DIR / out_f)
 
 @define
 class Writer:
@@ -85,7 +98,6 @@ class FieldExistsException(Exception):
 @define
 class Annotator:
 
-    id_s = "ID"
     approved: dict = {}
     name: str = "unnamed_parser"
     approved_path: str = None
@@ -106,6 +118,11 @@ class Annotator:
 
     def __attrs_post_init__(self):
         self.define_approved()
+
+    def clear(self, record_id):
+        if record_id in self.approved:
+            del self.approved[record_id]
+
 
     def parse(self, input):
         return input
@@ -245,7 +262,7 @@ class UniParser(Annotator):
             jsonlib.dump(obj=self.approved, path=self.approved_path)
 
     def parse(self, record):
-        log.info(f"""Parsing {record[self.parse_col]} ({record[self.id_s]})""")
+        log.info(f"""Parsing {record[self.parse_col]} ({record.name})""")
         if self.trans not in record:
             log.info(f"No column {self.trans}, adding...")
             record[self.trans] = "Missing_Translation"
@@ -276,13 +293,13 @@ class UniParser(Annotator):
                     potential_gloss = added_fields["gloss"] + [potential_analysis.gloss]
                     obj_choices.append(potential_obj)
                     gloss_choices.append(potential_gloss)
-                    if record[self.id_s] in self.approved:
+                    if record.name in self.approved:
                         if (
                             self.word_sep.join(potential_gloss)
-                            in self.approved[record["ID"]][self.gloss]
+                            in self.approved[record.name][self.gloss]
                         ):
                             log.info(
-                                f"""Using past analysis '{potential_analysis.gloss}' for *{potential_analysis.wf}* in {record["ID"]}"""
+                                f"""Using past analysis '{potential_analysis.gloss}' for *{potential_analysis.wf}* in {record.name}"""
                             )
                             analysis = potential_analysis
                             found_past = True
@@ -301,7 +318,7 @@ class UniParser(Annotator):
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
                             f""
-                            f"{record[self.id_s]}: ambiguity while parsing *{wf_analysis[0].wf}*. Choose correct analysis for\n{record[self.parse_col]}\n'{record[self.trans]}'"
+                            f"{record.name}: ambiguity while parsing *{wf_analysis[0].wf}*. Choose correct analysis for\n{record[self.parse_col]}\n'{record[self.trans]}'"
                             "",
                             choices=answers,
                         ).ask()
@@ -336,7 +353,7 @@ class UniParser(Annotator):
         )
         if len(unparsable) > 0:
             log.warning(
-                f"Unparsable: {', '.join(unparsable)} in {record['ID']}:\n{pretty_record}"
+                f"Unparsable: {', '.join(unparsable)} in {record.name}:\n{pretty_record}"
             )
             self.unparsable.extend(unparsable)
         else:
@@ -344,7 +361,7 @@ class UniParser(Annotator):
         for output_name, field_name in self.uniparser_fields.items():
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
-            self.approved[record[self.id_s]] = dict(record)
+            self.approved[record.name] = {key: value for key, value in dict(record).items() if key in [self.gloss, self.obj, self.gramm]}
             jsonlib.dump(
                 self.approved, self.approved_path, indent=4, ensure_ascii=False
             )
