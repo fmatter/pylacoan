@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 from itertools import groupby
 from pathlib import Path
 import pandas as pd
@@ -10,7 +11,7 @@ from segments import Profile
 from segments import Tokenizer
 from uniparser_morph import Analyzer
 from pylacoan.helpers import ortho_strip
-import sys
+
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ OUTPUT_DIR = Path("output")
 INPUT_DIR = Path("input")
 IDX_COL = "ID"
 
+
 def define_file_path(file, base_dir):
     if "/" in file:
         return [Path(file)]
@@ -52,16 +54,38 @@ def define_file_path(file, base_dir):
 def run_pipeline(parser_list, in_f, out_f):
     file_paths = define_file_path(in_f, INPUT_DIR)
     out_path = OUTPUT_DIR / out_f
+    parsed_dfs = []
     for file in file_paths:
-        if ".csv" in file:
+        if ".csv" in file.name:
             df = pd.read_csv(file, index_col=IDX_COL, keep_default_na=False)
             for parser in parser_list:
                 output = []
-                for record in df.to_dict(orient="records"):
+                for i, record in df.iterrows():
                     output.append(parser.parse(record))
-                df = pd.DataFrame.from_dict(output)
+                parsed_dfs.append(pd.DataFrame.from_dict(output))
                 parser.write()
-    df.to_csv(out_path, index=False)
+    df = pd.concat(parsed_dfs)
+    df.index.name = IDX_COL
+    df.to_csv(out_path)
+
+
+def reparse_text(parser_list, out_f, text_id):
+    df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
+    out_path = OUTPUT_DIR / out_f
+    parsed_dfs = []
+    for parser in parser_list:
+        parser.interactive = True
+        output = []
+        for i, record in df.iterrows():
+            if record["Text_ID"] == text_id:
+                output.append(parser.parse(record))
+            else:
+                output.append(record)
+        parsed_dfs.append(pd.DataFrame.from_dict(output))
+        parser.write()
+    df = pd.concat(parsed_dfs)
+    df.index.name = IDX_COL
+    df.to_csv(OUTPUT_DIR/out_f)
 
 def reparse(parser_list, out_f, record_id):
     df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
@@ -70,8 +94,11 @@ def reparse(parser_list, out_f, record_id):
         sys.exit(1)
     record = df.loc[record_id]
     for parser in parser_list:
+        parser.interactive = True
         df.loc[record.name] = parser.parse(record)
+    df.index.name = IDX_COL
     df.to_csv(OUTPUT_DIR / out_f)
+
 
 @define
 class Writer:
@@ -122,7 +149,6 @@ class Annotator:
     def clear(self, record_id):
         if record_id in self.approved:
             del self.approved[record_id]
-
 
     def parse(self, input):
         return input
@@ -203,6 +229,7 @@ class UniParser(Annotator):
     lexFile: str = None
     paradigmFile: str = None
     delAnaFile: str = None
+    hide_ambiguity: bool = False
 
     def _get_field(self, wf, field):
         field_dic = {
@@ -223,6 +250,10 @@ class UniParser(Annotator):
     def _define_unparsable(self):
         if not self.unparsable_path:
             self.unparsable_path = self.name + "_unparsable.txt"
+
+    def _define_ambiguous(self):
+        if not self.unparsable_path:
+            self.unparsable_path = self.name + "_ambiguous.txt"
 
     def __attrs_post_init__(self):
         self.define_approved()
@@ -361,7 +392,11 @@ class UniParser(Annotator):
         for output_name, field_name in self.uniparser_fields.items():
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
-            self.approved[record.name] = {key: value for key, value in dict(record).items() if key in [self.gloss, self.obj, self.gramm]}
+            self.approved[record.name] = {
+                key: value
+                for key, value in dict(record).items()
+                if key in [self.gloss, self.obj, self.gramm]
+            }
             jsonlib.dump(
                 self.approved, self.approved_path, indent=4, ensure_ascii=False
             )
