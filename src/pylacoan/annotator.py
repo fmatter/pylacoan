@@ -10,6 +10,7 @@ from clldutils import jsonlib
 from segments import Profile
 from segments import Tokenizer
 from uniparser_morph import Analyzer
+from uniparser_morph.wordform import Wordform
 from pylacoan.helpers import ortho_strip
 
 
@@ -306,6 +307,7 @@ class UniParser(Annotator):
         for field_name in self.uniparser_fields.values():
             added_fields[field_name] = []
         unparsable = []
+        ambiguous = []
         gained_approval = False
         all_analyses = self.parse_word(
             ortho_strip(record[self.parse_col])
@@ -357,6 +359,14 @@ class UniParser(Annotator):
                             andic[choice]
                         ]  # pylint: disable=unsubscriptable-object
                         gained_approval = True
+                    elif not self.hide_ambiguity:
+                        analysis = Wordform(self.analyzer.g)
+                        analysis.wf = wf_analysis[
+                            0
+                        ].wf
+                        for field_name in self.uniparser_fields.values():
+                            setattr(analysis, field_name, "?")
+                        analysis.wfGlossed = "?"
                     else:
                         analysis = wf_analysis[
                             0
