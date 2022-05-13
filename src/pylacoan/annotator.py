@@ -255,6 +255,16 @@ class UniParser(Annotator):
     def _define_ambiguous(self):
         if not self.unparsable_path:
             self.unparsable_path = self.name + "_ambiguous.txt"
+    
+    def _compare_ids(self, analysis_list):
+        id_list = []
+        for analysis in analysis_list:
+            ids = sorted(self._get_field(analysis, "id").split(","))
+            if len(id_list) == 0:
+                id_list = [ids]
+            elif ids not in id_list:
+                return False
+        return True
 
     def __attrs_post_init__(self):
         self.define_approved()
@@ -360,13 +370,17 @@ class UniParser(Annotator):
                         ]  # pylint: disable=unsubscriptable-object
                         gained_approval = True
                     elif not self.hide_ambiguity:
+                        only_polysemy = self._compare_ids(wf_analysis)
                         analysis = Wordform(self.analyzer.g)
                         analysis.wf = wf_analysis[
                             0
                         ].wf
                         for field_name in self.uniparser_fields.values():
                             setattr(analysis, field_name, "?")
-                        analysis.wfGlossed = "?"
+                        if only_polysemy:
+                            analysis.wfGlossed = wf_analysis[
+                            0
+                        ].wfGlossed
                     else:
                         analysis = wf_analysis[
                             0
