@@ -225,7 +225,9 @@ class UniParser(Annotator):
     gramm: str = "Gramm"
     overwrite_fields: bool = False
     unparsable_path: str = None
+    ambiguous_path: str = None
     unparsable: list = []
+    ambiguous: list = []
     punctuation: list = ['"', ","]
     lexFile: str = None
     paradigmFile: str = None
@@ -253,8 +255,8 @@ class UniParser(Annotator):
             self.unparsable_path = self.name + "_unparsable.txt"
 
     def _define_ambiguous(self):
-        if not self.unparsable_path:
-            self.unparsable_path = self.name + "_ambiguous.txt"
+        if not self.ambiguous_path:
+            self.ambiguous_path = self.name + "_ambiguous.txt"
     
     def _compare_ids(self, analysis_list):
         id_list = []
@@ -269,6 +271,7 @@ class UniParser(Annotator):
     def __attrs_post_init__(self):
         self.define_approved()
         self._define_unparsable()
+        self._define_ambiguous()
         if isinstance(self.analyzer, str):
             ana_path = self.analyzer
             self.analyzer = Analyzer()
@@ -300,6 +303,8 @@ class UniParser(Annotator):
         self.unparsable = [x for x, y in unparsable_counts]
         with open(f"{self.unparsable_path}", "w") as f:
             f.write("\n".join(self.unparsable))
+        with open(f"{self.ambiguous_path}", "w") as f:
+            f.write("\n\n".join(self.ambiguous))
         if self.interactive:
             jsonlib.dump(obj=self.approved, path=self.approved_path)
 
@@ -317,7 +322,7 @@ class UniParser(Annotator):
         for field_name in self.uniparser_fields.values():
             added_fields[field_name] = []
         unparsable = []
-        ambiguous = []
+        ambiguous = {}
         gained_approval = False
         all_analyses = self.parse_word(
             ortho_strip(record[self.parse_col])
@@ -329,7 +334,10 @@ class UniParser(Annotator):
                 found_past = False
                 obj_choices = []
                 gloss_choices = []
+                word_form = wf_analysis[0].wf
+                ambiguous[word_form] = []
                 for potential_analysis in wf_analysis:
+                    ambiguous[word_form].append(str(potential_analysis))
                     potential_obj = added_fields["wfGlossed"] + [
                         potential_analysis.wfGlossed
                     ]
@@ -406,6 +414,8 @@ class UniParser(Annotator):
             + record[self.trans]
             + "’"
         )
+        if len(ambiguous) > 0:
+            self.ambiguous.append("\n".join([pretty_record, "\nAmbiguities:", "\n".join([f"{wf}:\n {' '.join(forms)}" for wf, forms in ambiguous.items()])]))
         if len(unparsable) > 0:
             log.warning(
                 f"Unparsable: {', '.join(unparsable)} in {record.name}:\n{pretty_record}"

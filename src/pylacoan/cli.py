@@ -38,12 +38,12 @@ def run():
 
 
 @main.command()
-@click.argument("key")
+@click.argument("key", nargs=-1)
 @click.option("--keep",is_flag=True, default=False)
 def reparse(key, keep):
     parser_list, in_f, out_f = load_pipeline()
     for filename in define_file_path(in_f, INPUT_DIR):
-        if filename.stem == key:
+        if filename.stem == key[0]:
             df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
             if not keep:
                 for i, row in df.iterrows():
@@ -51,6 +51,7 @@ def reparse(key, keep):
                         parser.clear(i)
             reparse_text(parser_list, out_f, filename.stem)
             return None
-    for parser in parser_list:
-        parser.clear(key)
-    preparse(parser_list, out_f, key)
+    for sentence_id in key:
+        for parser in parser_list:
+            parser.clear(sentence_id)
+        preparse(parser_list, out_f, sentence_id)
