@@ -300,9 +300,9 @@ class UniParser(Annotator):
             (i, len(list(c))) for i, c in groupby(sorted(self.unparsable))
         ]
         unparsable_counts = sorted(unparsable_counts, key=lambda x: x[1], reverse=True)
-        self.unparsable = [x for x, y in unparsable_counts]
+        # self.unparsable = [f"{x}\t{y}" for x, y in unparsable_counts]
         with open(f"{self.unparsable_path}", "w") as f:
-            f.write("\n".join(self.unparsable))
+            f.write("\n".join([f"{x}\t{y}" for x, y in unparsable_counts]))
         with open(f"{self.ambiguous_path}", "w") as f:
             f.write("\n\n".join(self.ambiguous))
         if self.interactive:
