@@ -86,7 +86,8 @@ def reparse_text(parser_list, out_f, text_id):
         parser.write()
     df = pd.concat(parsed_dfs)
     df.index.name = IDX_COL
-    df.to_csv(OUTPUT_DIR/out_f)
+    df.to_csv(OUTPUT_DIR / out_f)
+
 
 def reparse(parser_list, out_f, record_id):
     df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
@@ -257,7 +258,7 @@ class UniParser(Annotator):
     def _define_ambiguous(self):
         if not self.ambiguous_path:
             self.ambiguous_path = self.name + "_ambiguous.txt"
-    
+
     def _compare_ids(self, analysis_list):
         id_list = []
         for analysis in analysis_list:
@@ -380,15 +381,11 @@ class UniParser(Annotator):
                     elif not self.hide_ambiguity:
                         only_polysemy = self._compare_ids(wf_analysis)
                         analysis = Wordform(self.analyzer.g)
-                        analysis.wf = wf_analysis[
-                            0
-                        ].wf
+                        analysis.wf = wf_analysis[0].wf
                         for field_name in self.uniparser_fields.values():
                             setattr(analysis, field_name, "?")
                         if only_polysemy:
-                            analysis.wfGlossed = wf_analysis[
-                            0
-                        ].wfGlossed
+                            analysis.wfGlossed = wf_analysis[0].wfGlossed
                     else:
                         analysis = wf_analysis[
                             0
@@ -415,7 +412,20 @@ class UniParser(Annotator):
             + "’"
         )
         if len(ambiguous) > 0:
-            self.ambiguous.append("\n".join([pretty_record, "\nAmbiguities:", "\n".join([f"{wf}:\n {' '.join(forms)}" for wf, forms in ambiguous.items()])]))
+            self.ambiguous.append(
+                "\n".join(
+                    [
+                        pretty_record,
+                        "\nAmbiguities:",
+                        "\n".join(
+                            [
+                                f"{wf}:\n {' '.join(forms)}"
+                                for wf, forms in ambiguous.items()
+                            ]
+                        ),
+                    ]
+                )
+            )
         if len(unparsable) > 0:
             log.warning(
                 f"Unparsable: {', '.join(unparsable)} in {record.name}:\n{pretty_record}"

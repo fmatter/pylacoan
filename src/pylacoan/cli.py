@@ -39,7 +39,7 @@ def run():
 
 @main.command()
 @click.argument("key", nargs=-1)
-@click.option("--keep",is_flag=True, default=False)
+@click.option("--keep", is_flag=True, default=False)
 def reparse(key, keep):
     parser_list, in_f, out_f = load_pipeline()
     for filename in define_file_path(in_f, INPUT_DIR):

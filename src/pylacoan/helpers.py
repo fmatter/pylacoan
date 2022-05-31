@@ -4,6 +4,21 @@ from pyigt import IGT
 
 log = logging.getLogger(__name__)
 
+ud_pos = ["v"]
+
+def get_pos(tagset, mode="UD", sep=",", pos_list=None):
+    if isinstance(tagset, str):
+        tagset = tagset.split(sep)
+    if not pos_list:
+        if mode == "UD":
+            pos_list = ud_pos
+        else:
+            pos_list = []
+    for tag in tagset:
+        if tag in pos_list:
+            return tag
+    return ""
+
 
 def get_morph_id(id_list, id_dic, obj, gloss=""):
     """Identifies which ID belongs to a given morph.
