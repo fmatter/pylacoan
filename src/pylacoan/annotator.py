@@ -194,7 +194,10 @@ class Segmentizer(Annotator):
 
     def parse_string(self, input_str):
         if self.tokenize:
-            return re.sub(" +", " ", self.tokenizer(input_str, column=self.profile_col))
+            res = re.sub(" +", " ", self.tokenizer(input_str, column=self.profile_col))
+            if self.complain and "�" in res:
+                log.warning(f"Could not convert {input_str}: {res}")
+            return res
         else:
             res = self.tokenizer(
                 input_str,
