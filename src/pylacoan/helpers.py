@@ -20,7 +20,7 @@ def get_pos(tagset, mode="UD", sep=",", pos_list=None):
     return ""
 
 
-def get_morph_id(id_list, id_dic, obj, gloss=""):
+def get_morph_id(id_list, id_dic, obj, gloss="", mode="morphs"):
     """Identifies which ID belongs to a given morph.
 
     :param id_list: a list of ID strings, one of which is thought to
@@ -46,11 +46,16 @@ def get_morph_id(id_list, id_dic, obj, gloss=""):
         if m_id not in id_dic:
             raise ValueError(f"ID {m_id} not found in id_dic")
         if test_str in id_dic[m_id]:
-            return id_dic[m_id][test_str]
+            if mode == "morphs":
+                return id_dic[m_id][test_str]
+            elif mode == "morphemes":
+                return m_id
+            else:
+                raise ValueError(f"Invalid mode '{mode}'")
     return None
 
 
-def sort_uniparser_ids(id_list, obj, gloss, id_dic):
+def sort_uniparser_ids(id_list, obj, gloss, id_dic, mode="morphs"):
     """Used for sorting the unsorted ID annotations by`uniparser
     <https://uniparser-morph.readthedocs.io/en/latest/paradigms.html#morpheme-ids>`_.
     There will be a glossed word form with segmented object and gloss lines, as
@@ -63,13 +68,20 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic):
     sorted_ids = []
     for w in igt.glossed_words:
         for m in w.glossed_morphemes:
-            sorted_ids.append(get_morph_id(id_list, id_dic, m.morpheme, m.gloss))
+            sorted_ids.append(get_morph_id(id_list, id_dic, m.morpheme, m.gloss, mode))
     log.debug(sorted_ids)
     return sorted_ids
 
 
 punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", '"', "¡"]
 
+def pprint_uniparser(wf):
+    return f"""{wf.wfGlossed}
+{wf.gloss}
+
+lemma: {wf.lemma}
+gramm: {wf.gramm}
+ids: {dict(wf.otherData).get("id", None)}"""
 
 def ortho_strip(ortho_str, exceptions=None, additions=None):
     if exceptions is None:
