@@ -89,7 +89,7 @@ def reparse_text(parser_list, out_f, text_id):
     df.to_csv(OUTPUT_DIR / out_f)
 
 
-def reparse(parser_list, out_f, record_id):
+def reparse_ex(parser_list, out_f, record_id):
     df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
     if record_id not in df.index:
         log.error(f"No record with the ID {record_id} found in {out_f}")
@@ -101,6 +101,24 @@ def reparse(parser_list, out_f, record_id):
     df.index.name = IDX_COL
     df.to_csv(OUTPUT_DIR / out_f)
 
+def parse_df(parser_list, out_f, df, interactive):
+    full_df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
+    parsed_dfs = [full_df]
+    for parser in parser_list:
+        output = []
+        parser.interactive = interactive
+        for idx, record in df.iterrows():
+            if idx in full_df.index:
+                log.warning(f"Overwriting existing analysis of record {idx}")
+                parser.clear(idx)
+                full_df.drop([idx], inplace=True)
+            output.append(parser.parse(record))
+        parsed_dfs.append(pd.DataFrame.from_dict(output))
+        parser.write()
+    df = pd.concat(parsed_dfs)
+    df = df.fillna("")
+    df.index.name = IDX_COL
+    df.to_csv(OUTPUT_DIR / out_f)
 
 @define
 class Writer:

@@ -2,9 +2,8 @@ import logging
 import sys
 from pathlib import Path
 import click
-from pylacoan import reparse as preparse
 from pylacoan import run_pipeline
-from pylacoan.annotator import INPUT_DIR, define_file_path, reparse_text
+from pylacoan.annotator import INPUT_DIR, define_file_path, reparse_text, reparse_ex, parse_df
 import pandas as pd
 
 sys.path.append(str(Path.cwd()))
@@ -54,4 +53,14 @@ def reparse(key, keep):
     for sentence_id in key:
         for parser in parser_list:
             parser.clear(sentence_id)
-        preparse(parser_list, out_f, sentence_id)
+        reparse_ex(parser_list, out_f, sentence_id)
+
+@main.command()
+@click.argument("key", nargs=-1)
+@click.option("--automatic", is_flag=True, default=False)
+def parse(key, automatic):
+    parser_list, in_f, out_f = load_pipeline()
+    for filename in define_file_path(in_f, INPUT_DIR):
+        if filename.stem == key[0]:
+            df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
+            parse_df(parser_list, out_f, df, interactive = not automatic)
