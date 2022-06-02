@@ -44,7 +44,7 @@ def get_morph_id(id_list, id_dic, obj, gloss="", mode="morphs"):
     for m_id in id_list:
         log.debug(f"testing id {m_id}")
         if m_id not in id_dic:
-            raise ValueError(f"ID {m_id} not found in id_dic ({obj})")
+            raise ValueError(f"ID {m_id} not found in id_dic")
         if test_str in id_dic[m_id]:
             if mode == "morphs":
                 return id_dic[m_id][test_str]
@@ -68,7 +68,12 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic, mode="morphs"):
     sorted_ids = []
     for w in igt.glossed_words:
         for m in w.glossed_morphemes:
-            sorted_ids.append(get_morph_id(id_list, id_dic, m.morpheme, m.gloss, mode))
+            try:
+                sorted_ids.append(get_morph_id(id_list, id_dic, m.morpheme, m.gloss, mode))
+            except ValueError as e:
+                log.error(e)
+                log.error(id_list)
+                log.error(f"{obj} '{gloss}'")
     log.debug(sorted_ids)
     return sorted_ids
 
