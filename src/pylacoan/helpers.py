@@ -44,7 +44,7 @@ def get_morph_id(id_list, id_dic, obj, gloss="", mode="morphs"):
     for m_id in id_list:
         log.debug(f"testing id {m_id}")
         if m_id not in id_dic:
-            raise ValueError(f"ID {m_id} not found in id_dic")
+            raise ValueError(f"ID {m_id} not found in id_dic ({obj})")
         if test_str in id_dic[m_id]:
             if mode == "morphs":
                 return id_dic[m_id][test_str]
