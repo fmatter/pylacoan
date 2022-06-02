@@ -3,7 +3,13 @@ import sys
 from pathlib import Path
 import click
 from pylacoan import run_pipeline
-from pylacoan.annotator import INPUT_DIR, define_file_path, reparse_text, reparse_ex, parse_df
+from pylacoan.annotator import (
+    INPUT_DIR,
+    define_file_path,
+    reparse_text,
+    reparse_ex,
+    parse_df,
+)
 import pandas as pd
 
 sys.path.append(str(Path.cwd()))
@@ -39,7 +45,8 @@ def run():
 @main.command()
 @click.argument("key", nargs=-1)
 @click.option("--keep", is_flag=True, default=False)
-def reparse(key, keep):
+@click.option("--automatic", is_flag=True, default=False)
+def reparse(key, keep, automatic):
     parser_list, in_f, out_f = load_pipeline()
     for filename in define_file_path(in_f, INPUT_DIR):
         if filename.stem == key[0]:
@@ -48,12 +55,13 @@ def reparse(key, keep):
                 for i, row in df.iterrows():
                     for parser in parser_list:
                         parser.clear(i)
-            reparse_text(parser_list, out_f, filename.stem)
+            reparse_text(parser_list, out_f, filename.stem, interactive=not automatic)
             return None
     for sentence_id in key:
         for parser in parser_list:
             parser.clear(sentence_id)
-        reparse_ex(parser_list, out_f, sentence_id)
+        reparse_ex(parser_list, out_f, sentence_id, interactive=not automatic)
+
 
 @main.command()
 @click.argument("keys", nargs=-1)
@@ -64,4 +72,4 @@ def parse(keys, automatic):
         for filename in define_file_path(in_f, INPUT_DIR):
             if filename.stem == key:
                 df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
-                parse_df(parser_list, out_f, df, interactive = not automatic)
+                parse_df(parser_list, out_f, df, interactive=not automatic)

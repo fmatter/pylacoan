@@ -6,6 +6,7 @@ log = logging.getLogger(__name__)
 
 ud_pos = ["v"]
 
+
 def get_pos(tagset, mode="UD", sep=",", pos_list=None):
     if isinstance(tagset, str):
         tagset = tagset.split(sep)
@@ -69,7 +70,9 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic, mode="morphs"):
     for w in igt.glossed_words:
         for m in w.glossed_morphemes:
             try:
-                sorted_ids.append(get_morph_id(id_list, id_dic, m.morpheme, m.gloss, mode))
+                sorted_ids.append(
+                    get_morph_id(id_list, id_dic, m.morpheme, m.gloss, mode)
+                )
             except ValueError as e:
                 log.error(e)
                 log.error(id_list)
@@ -80,6 +83,7 @@ def sort_uniparser_ids(id_list, obj, gloss, id_dic, mode="morphs"):
 
 punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", '"', "¡"]
 
+
 def pprint_uniparser(wf):
     return f"""{wf.wfGlossed}
 {wf.gloss}
@@ -87,6 +91,7 @@ def pprint_uniparser(wf):
 lemma: {wf.lemma}
 gramm: {wf.gramm}
 ids: {dict(wf.otherData).get("id", None)}"""
+
 
 def ortho_strip(ortho_str, exceptions=None, additions=None):
     if exceptions is None:

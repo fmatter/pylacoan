@@ -70,12 +70,13 @@ def run_pipeline(parser_list, in_f, out_f):
     df.to_csv(out_path)
 
 
-def reparse_text(parser_list, out_f, text_id):
+def reparse_text(parser_list, out_f, text_id, interactive=True):
     df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
     out_path = OUTPUT_DIR / out_f
     parsed_dfs = []
     for parser in parser_list:
-        parser.interactive = True
+        if interactive:
+            parser.interactive = True
         output = []
         for i, record in df.iterrows():
             if record["Text_ID"] == text_id:
@@ -89,17 +90,19 @@ def reparse_text(parser_list, out_f, text_id):
     df.to_csv(OUTPUT_DIR / out_f)
 
 
-def reparse_ex(parser_list, out_f, record_id):
+def reparse_ex(parser_list, out_f, record_id, interactive=True):
     df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
     if record_id not in df.index:
         log.error(f"No record with the ID {record_id} found in {out_f}")
         sys.exit(1)
     record = df.loc[record_id]
     for parser in parser_list:
-        parser.interactive = True
+        if interactive:
+            parser.interactive = True
         df.loc[record.name] = parser.parse(record)
     df.index.name = IDX_COL
     df.to_csv(OUTPUT_DIR / out_f)
+
 
 def parse_df(parser_list, out_f, df, interactive):
     full_df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
@@ -119,6 +122,7 @@ def parse_df(parser_list, out_f, df, interactive):
     df = df.fillna("")
     df.index.name = IDX_COL
     df.to_csv(OUTPUT_DIR / out_f)
+
 
 @define
 class Writer:
