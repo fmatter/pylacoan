@@ -56,11 +56,12 @@ def reparse(key, keep):
         reparse_ex(parser_list, out_f, sentence_id)
 
 @main.command()
-@click.argument("key", nargs=-1)
+@click.argument("keys", nargs=-1)
 @click.option("--automatic", is_flag=True, default=False)
-def parse(key, automatic):
+def parse(keys, automatic):
     parser_list, in_f, out_f = load_pipeline()
-    for filename in define_file_path(in_f, INPUT_DIR):
-        if filename.stem == key[0]:
-            df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
-            parse_df(parser_list, out_f, df, interactive = not automatic)
+    for key in keys:
+        for filename in define_file_path(in_f, INPUT_DIR):
+            if filename.stem == key:
+                df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
+                parse_df(parser_list, out_f, df, interactive = not automatic)
