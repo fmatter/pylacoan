@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * `pylacoan run` and `pylacoan reparse` commands
 * unparsable counts
+* option not to choose any analysis
 
 ### Removed
 

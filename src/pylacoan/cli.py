@@ -58,8 +58,9 @@ def reparse(key, keep, automatic):
             reparse_text(parser_list, out_f, filename.stem, interactive=not automatic)
             return None
     for sentence_id in key:
-        for parser in parser_list:
-            parser.clear(sentence_id)
+        if not keep:
+            for parser in parser_list:
+                parser.clear(sentence_id)
         reparse_ex(parser_list, out_f, sentence_id, interactive=not automatic)
 
 

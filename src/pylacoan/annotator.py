@@ -392,6 +392,7 @@ class UniParser(Annotator):
                             answers.append(
                                 f"({i+1}) " + pad_obj + "\n       " + pad_gloss
                             )
+                        answers.append("I'd rather not choose.")
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
                             f""
@@ -399,10 +400,14 @@ class UniParser(Annotator):
                             "",
                             choices=answers,
                         ).ask()
-                        analysis = wf_analysis[
-                            andic[choice]
-                        ]  # pylint: disable=unsubscriptable-object
-                        gained_approval = True
+                        if choice == "I'd rather not choose.":
+                            analysis = Wordform(self.analyzer.g)
+                            analysis.wf = wf_analysis[0].wf
+                        else:
+                            analysis = wf_analysis[
+                                andic[choice]
+                            ]  # pylint: disable=unsubscriptable-object
+                            gained_approval = True
                     elif not self.hide_ambiguity:
                         only_polysemy = self._compare_ids(wf_analysis)
                         analysis = Wordform(self.analyzer.g)
