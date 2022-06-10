@@ -43,34 +43,43 @@ def run():
 
 
 @main.command()
-@click.argument("key", nargs=-1)
+@click.argument("keys", nargs=-1)
+@click.option("--file", nargs=1, default="all")
 @click.option("--keep", is_flag=True, default=False)
 @click.option("--automatic", is_flag=True, default=False)
-def reparse(key, keep, automatic):
+def reparse(keys, file, keep, automatic):
     parser_list, in_f, out_f = load_pipeline()
-    for filename in define_file_path(in_f, INPUT_DIR):
-        if filename.stem == key[0]:
-            df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
+    if keys == ():
+        for filename in define_file_path(in_f, INPUT_DIR):
+            if file == "all" or filename.stem == file:
+                df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
+                if not keep:
+                    for i, row in df.iterrows():
+                        for parser in parser_list:
+                            parser.clear(i)
+                reparse_text(parser_list, out_f, filename.stem, interactive=not automatic)
+    else:
+        for sentence_id in keys:
             if not keep:
-                for i, row in df.iterrows():
-                    for parser in parser_list:
-                        parser.clear(i)
-            reparse_text(parser_list, out_f, filename.stem, interactive=not automatic)
-            return None
-    for sentence_id in key:
-        if not keep:
-            for parser in parser_list:
-                parser.clear(sentence_id)
-        reparse_ex(parser_list, out_f, sentence_id, interactive=not automatic)
+                for parser in parser_list:
+                    parser.clear(sentence_id)
+            reparse_ex(parser_list, out_f, sentence_id, interactive=not automatic)
 
 
 @main.command()
 @click.argument("keys", nargs=-1)
+@click.option("--file", nargs=1, default="all")
 @click.option("--automatic", is_flag=True, default=False)
-def parse(keys, automatic):
+def parse(keys, file, automatic):
     parser_list, in_f, out_f = load_pipeline()
-    for key in keys:
+    if keys == ():
         for filename in define_file_path(in_f, INPUT_DIR):
-            if filename.stem == key:
+            if file == "all" or filename.stem == file:
                 df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
                 parse_df(parser_list, out_f, df, interactive=not automatic)
+    else:
+        for key in keys:
+            for filename in define_file_path(in_f, INPUT_DIR):
+                if filename.stem == key:
+                    df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
+                    parse_df(parser_list, out_f, df, interactive=not automatic)

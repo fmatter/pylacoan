@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-* `pylacoan run` and `pylacoan reparse` commands
+* `pylacoan run`, `parse` and `reparse` commands
 * unparsable counts
 * option not to choose any analysis
 

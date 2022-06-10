@@ -15,6 +15,7 @@ from pylacoan.helpers import ortho_strip
 
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.ERROR)
 
 
 def pad_ex(obj, gloss, tuple=False, as_list=False):
@@ -335,7 +336,7 @@ class UniParser(Annotator):
             jsonlib.dump(obj=self.approved, path=self.approved_path)
 
     def parse(self, record):
-        log.info(f"""Parsing {record[self.parse_col]} ({record.name})""")
+        log.debug(f"""Parsing {record[self.parse_col]} ({record.name})""")
         if self.trans not in record:
             log.info(f"No column {self.trans}, adding...")
             record[self.trans] = "Missing_Translation"
@@ -355,7 +356,7 @@ class UniParser(Annotator):
             .strip(self.word_sep)
             .split(self.word_sep)
         )
-        for wf_analysis in all_analyses:
+        for word_count, wf_analysis in enumerate(all_analyses):
             if len(wf_analysis) > 1:
                 found_past = False
                 obj_choices = []
@@ -372,8 +373,8 @@ class UniParser(Annotator):
                     gloss_choices.append(potential_gloss)
                     if record.name in self.approved:
                         if (
-                            self.word_sep.join(potential_gloss)
-                            in self.approved[record.name][self.gloss]
+                            f"{potential_analysis.wfGlossed}:{potential_analysis.gloss}"
+                            == self.approved[record.name][str(word_count)]
                         ):
                             log.info(
                                 f"""Using past analysis '{potential_analysis.gloss}' for *{potential_analysis.wf}* in {record.name}"""
@@ -466,11 +467,9 @@ class UniParser(Annotator):
         for output_name, field_name in self.uniparser_fields.items():
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
-            self.approved[record.name] = {
-                key: value
-                for key, value in dict(record).items()
-                if key in [self.gloss, self.obj, self.gramm]
-            }
+            self.approved[record.name] = {}
+            for i, (obj, gloss) in enumerate(zip(record[self.obj].split(" "), record[self.gloss].split(" "))):
+                self.approved[record.name][i] = f"{obj}:{gloss}"
             jsonlib.dump(
                 self.approved, self.approved_path, indent=4, ensure_ascii=False
             )
