@@ -58,7 +58,7 @@ def run_pipeline(parser_list, in_f, out_f):
     out_path = OUTPUT_DIR / out_f
     parsed_dfs = []
     for file in file_paths:
-        if ".csv" in file.name:
+        if file.name.endswith(".csv"):
             df = pd.read_csv(file, index_col=IDX_COL, keep_default_na=False)
             for parser in parser_list:
                 output = []
