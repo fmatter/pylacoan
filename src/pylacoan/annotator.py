@@ -421,8 +421,11 @@ class UniParser(Annotator):
                         analysis = wf_analysis[
                             0
                         ]  # pylint: disable=unsubscriptable-object
-            else:
+            elif len(wf_analysis) == 1:
                 analysis = wf_analysis[0]  # pylint: disable=unsubscriptable-object
+            else:
+                print(word_count)
+                print(record)
             if analysis.wfGlossed == "":
                 unparsable.append(analysis.wf)
                 for field_name in self.uniparser_fields.values():
