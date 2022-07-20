@@ -1,5 +1,5 @@
-from pylacoan.annotator import Segmentizer
 import copy
+from pylacoan.annotator import Segmentizer
 
 
 def test_segments():

@@ -2,15 +2,14 @@ import logging
 import sys
 from pathlib import Path
 import click
-from pylacoan import run_pipeline
-from pylacoan.annotator import (
-    INPUT_DIR,
-    define_file_path,
-    reparse_text,
-    reparse_ex,
-    parse_df,
-)
 import pandas as pd
+from pylacoan import run_pipeline
+from pylacoan.annotator import INPUT_DIR
+from pylacoan.annotator import define_file_path
+from pylacoan.annotator import parse_df
+from pylacoan.annotator import reparse_ex
+from pylacoan.annotator import reparse_text
+
 
 sys.path.append(str(Path.cwd()))
 
@@ -21,15 +20,9 @@ PIPELINE = "pylacoan_pipeline.py"
 
 def load_pipeline():
     if Path(PIPELINE).is_file():
-        from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
-            INPUT_FILE,
-        )
-        from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
-            OUTPUT_FILE,
-        )
-        from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
-            parser_list,
-        )
+        from pylacoan_pipeline import INPUT_FILE  # pylint: disable=import-outside-toplevel,import-error
+        from pylacoan_pipeline import OUTPUT_FILE  # pylint: disable=import-outside-toplevel,import-error
+        from pylacoan_pipeline import parser_list  # pylint: disable=import-outside-toplevel,import-error
 
         return parser_list, INPUT_FILE, OUTPUT_FILE
     log.error(f"{PIPELINE} not found")

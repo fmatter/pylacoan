@@ -1,5 +1,6 @@
-from pylacoan.helpers import get_morph_id, sort_uniparser_ids
 import pytest
+from pylacoan.helpers import get_morph_id
+from pylacoan.helpers import sort_uniparser_ids
 
 
 def test_get_morph_id():
