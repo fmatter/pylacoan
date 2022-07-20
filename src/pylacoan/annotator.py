@@ -73,7 +73,6 @@ def run_pipeline(parser_list, in_f, out_f):
 
 def reparse_text(parser_list, out_f, text_id, interactive=True):
     df = pd.read_csv(OUTPUT_DIR / out_f, index_col=IDX_COL, keep_default_na=False)
-    out_path = OUTPUT_DIR / out_f
     parsed_dfs = []
     for parser in parser_list:
         if interactive:
@@ -471,7 +470,9 @@ class UniParser(Annotator):
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record.name] = {}
-            for i, (obj, gloss) in enumerate(zip(record[self.obj].split(" "), record[self.gloss].split(" "))):
+            for i, (obj, gloss) in enumerate(
+                zip(record[self.obj].split(" "), record[self.gloss].split(" "))
+            ):
                 self.approved[record.name][i] = f"{obj}:{gloss}"
             jsonlib.dump(
                 self.approved, self.approved_path, indent=4, ensure_ascii=False

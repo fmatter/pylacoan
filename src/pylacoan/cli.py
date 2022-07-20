@@ -57,7 +57,9 @@ def reparse(keys, file, keep, automatic):
                     for i, row in df.iterrows():
                         for parser in parser_list:
                             parser.clear(i)
-                reparse_text(parser_list, out_f, filename.stem, interactive=not automatic)
+                reparse_text(
+                    parser_list, out_f, filename.stem, interactive=not automatic
+                )
     else:
         for sentence_id in keys:
             if not keep:
