@@ -390,9 +390,9 @@ class UniParser(Annotator):
                         answers.append("I'd rather not choose.")
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
-                            f""
-                            f"{record.name}: ambiguity while parsing *{wf_analysis[0].wf}*. Choose correct analysis for\n{record[self.parse_col]}\n'{record[self.trans]}'"
-                            "",
+                            f"{record.name}: ambiguity for {wf_analysis[0].wf}. "
+                            "Choose correct analysis for\n{record[self.parse_col]}"
+                            "\n'{record[self.trans]}'",
                             choices=answers,
                         ).ask()
                         if choice == "I'd rather not choose.":

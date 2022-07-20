@@ -23,8 +23,10 @@ def load_pipeline():
     if Path(PIPELINE).is_file():
         from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
             INPUT_FILE,
-        )  
-        from pylacoan_pipeline import OUTPUT_FILE # pylint: disable=import-outside-toplevel,import-error
+        )
+        from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
+            OUTPUT_FILE,
+        )
         from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
             parser_list,
         )
