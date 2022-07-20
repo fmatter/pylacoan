@@ -3,16 +3,13 @@
 cff-version: "1.1.0"
 title: "pylacoan"
 authors:
-  -
-    family-names: Matter
+  - family-names: Matter
     given-names: Florian
     orcid: "https://orcid.org/0000-0002-2545-5154"
-date-released: 20??-MM-DD
-doi: <insert your DOI here>
-version: "0.0.2.dev"
-repository-code: "https://github.com/fmatter/pylacoan"
+version: "0.0.2"
+date-released: 2022-07-20
+url: "https://github.com/fmatter/pylacoan/releases/tag/0.0.2"
 keywords:
-  - keyword1
-  - keyword2
+  - corpus linguistics
 message: "If you use this software, please cite it using these metadata."
 license: Apache-2.0

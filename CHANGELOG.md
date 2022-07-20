@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Removed
+
+### Changed
+
+### Fixed
+
+## [0.0.2] -- 2022-07-20
+
+### Added
 * `pylacoan run`, `parse` and `reparse` commands
 * unparsable counts
 * option not to choose any analysis
@@ -16,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * approved analyses are stored and loaded unambiguously
-
-### Removed
 
 ### Changed
 * more informed feedback
@@ -30,5 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * First release on PyPI.
 
 
-[Unreleased]: https://github.com/fmatter/pylacoan/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/fmatter/pylacoan/compare/0.0.2...HEAD
+[0.0.2]: https://github.com/fmatter/pylacoan/releases/tag/0.0.2
 [0.0.1]: https://github.com/fmatter/pylacoan/releases/tag/v0.0.1
