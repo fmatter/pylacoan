@@ -49,10 +49,9 @@ def get_morph_id(id_list, id_dic, obj, gloss="", mode="morphs"):
         if test_str in id_dic[m_id]:
             if mode == "morphs":
                 return id_dic[m_id][test_str]
-            elif mode == "morphemes":
+            if mode == "morphemes":
                 return m_id
-            else:
-                raise ValueError(f"Invalid mode '{mode}'")
+            raise ValueError(f"Invalid mode '{mode}'")
     return None
 
 

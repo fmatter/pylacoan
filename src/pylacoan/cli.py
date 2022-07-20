@@ -21,14 +21,17 @@ PIPELINE = "pylacoan_pipeline.py"
 
 def load_pipeline():
     if Path(PIPELINE).is_file():
-        from pylacoan_pipeline import INPUT_FILE
+        from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
+            INPUT_FILE,
+        )  # pylint: disable=import-outside-toplevel,import-error
         from pylacoan_pipeline import OUTPUT_FILE
-        from pylacoan_pipeline import parser_list
+        from pylacoan_pipeline import (  # pylint: disable=import-outside-toplevel,import-error
+            parser_list,
+        )
 
         return parser_list, INPUT_FILE, OUTPUT_FILE
-    else:
-        log.error(f"{PIPELINE} not found")
-        sys.exit(1)
+    log.error(f"{PIPELINE} not found")
+    sys.exit(1)
 
 
 @click.group()
@@ -49,12 +52,12 @@ def run():
 @click.option("--automatic", is_flag=True, default=False)
 def reparse(keys, file, keep, automatic):
     parser_list, in_f, out_f = load_pipeline()
-    if keys == ():
+    if keys == ():  # pylint: disable=too-many-nested-blocks
         for filename in define_file_path(in_f, INPUT_DIR):
-            if file == "all" or filename.stem == file:
+            if file in ["all", filename.stem]:
                 df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
                 if not keep:
-                    for i, row in df.iterrows():
+                    for i in df.index:
                         for parser in parser_list:
                             parser.clear(i)
                 reparse_text(
@@ -76,7 +79,7 @@ def parse(keys, file, automatic):
     parser_list, in_f, out_f = load_pipeline()
     if keys == ():
         for filename in define_file_path(in_f, INPUT_DIR):
-            if file == "all" or filename.stem == file:
+            if file in ["all", filename.stem]:
                 df = pd.read_csv(filename, index_col="ID", keep_default_na=False)
                 parse_df(parser_list, out_f, df, interactive=not automatic)
     else:
