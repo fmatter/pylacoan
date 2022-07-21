@@ -60,7 +60,8 @@ def run_pipeline(parser_list, in_f, out_f):
             df = pd.read_csv(file, index_col=IDX_COL, keep_default_na=False)
             for parser in parser_list:
                 output = []
-                for record in df.to_dict("records"):
+                for i, record in df.iterrows():
+                    del i
                     output.append(parser.parse(record))
                 parsed_dfs.append(pd.DataFrame.from_dict(output))
                 parser.write()
@@ -76,7 +77,8 @@ def reparse_text(parser_list, out_f, text_id, interactive=True):
         if interactive:
             parser.interactive = True
         output = []
-        for record in df.to_dict("records"):
+        for i, record in df.iterrows():
+            del i
             if record["Text_ID"] == text_id:
                 output.append(parser.parse(record))
             else:
@@ -181,7 +183,8 @@ class Annotator:
 
     def parse_csv(self, file):
         df = pd.read_csv(file, keep_default_na=False)
-        for row in df.to_dict("records"):
+        for i, row in df.iterrows():
+            del i
             self.parse(row)
 
 

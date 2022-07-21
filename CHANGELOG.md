@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+* revert back to `.iterrows()` instead of `.to_dict("records")`
 
 ## [0.0.2] -- 2022-07-20
 
