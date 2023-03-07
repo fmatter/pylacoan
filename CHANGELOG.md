@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* ask for and save reasons for choosing one analysis over another
 
 ### Removed
 
 ### Changed
+* using dicts / JSON throughout
 
 ### Fixed
 * revert back to `.iterrows()` instead of `.to_dict("records")`

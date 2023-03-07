@@ -8,6 +8,7 @@ ud_pos = ["v"]
 
 
 def get_pos(tagset, mode="UD", sep=",", pos_list=None):
+    """Extracts a POS tag from a tag bundle."""
     if isinstance(tagset, str):
         tagset = tagset.split(sep)
     if not pos_list:
@@ -84,12 +85,13 @@ punctuation = [",", ".", ":", ";", "!", "-", "?", "“", "”", "’", "‘", '"
 
 
 def pprint_uniparser(wf):
-    return f"""{wf.wfGlossed}
-{wf.gloss}
-
-lemma: {wf.lemma}
-gramm: {wf.gramm}
-ids: {dict(wf.otherData).get("id", None)}"""
+    if not wf.wfGlossed:
+        return f"err: {wf.wf}"
+    return f"""obj: {wf.wfGlossed}
+gls: {wf.gloss}
+lex: {wf.lemma}
+grm: {wf.gramm}
+ids: {wf.to_json().get("id", None)}"""
 
 
 def ortho_strip(ortho_str, exceptions=None, additions=None):

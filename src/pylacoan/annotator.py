@@ -9,13 +9,25 @@ from attrs import define
 from clldutils import jsonlib
 from segments import Profile
 from segments import Tokenizer
+from pathlib import Path
 from uniparser_morph import Analyzer
 from uniparser_morph.wordform import Wordform
 from pylacoan.helpers import ortho_strip
-
+from tqdm import tqdm
+import json
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.ERROR)
+
+
+def jsondump(content, path):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(content, f, ensure_ascii=False, indent=4)
+
+
+def jsonload(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def pad_ex(obj, gloss, as_tuple=False, as_list=False):
@@ -54,18 +66,20 @@ def define_file_path(file, base_dir):
 def run_pipeline(parser_list, in_f, out_f):
     file_paths = define_file_path(in_f, INPUT_DIR)
     out_path = OUTPUT_DIR / out_f
-    parsed_dfs = []
+    records = []
     for file in file_paths:
         if file.name.endswith(".csv"):
             df = pd.read_csv(file, index_col=IDX_COL, keep_default_na=False)
+            filerecords = list([r for i, r in df.iterrows()])
             for parser in parser_list:
-                output = []
-                for i, record in df.iterrows():
-                    del i
-                    output.append(parser.parse(record))
-                parsed_dfs.append(pd.DataFrame.from_dict(output))
+                print(parser.name)
+                temp_records = []
+                for record in tqdm(filerecords):
+                    temp_records.append(parser.parse(record))
+                filerecords = temp_records
                 parser.write()
-    df = pd.concat(parsed_dfs)
+            records.extend(filerecords)
+    df = pd.DataFrame(records)
     df.index.name = IDX_COL
     df.to_csv(out_path)
 
@@ -152,9 +166,14 @@ class Annotator:
     approved: dict = {}
     name: str = "unnamed_parser"
     approved_path: str = None
+    cache_path: str = None
     out_file: str = None
     writer = None
+    cache: dict = {}
+    disamb_answers: dict = {}
+    motiv_path: str = None
     interactive: bool = True
+    justify_choices: bool = False
 
     def define_out_file(self):
         if not self.out_file:
@@ -165,7 +184,19 @@ class Annotator:
             self.approved_path = self.name + "_approved.json"
         self.approved_path = Path(self.approved_path)
         if self.approved_path.is_file():
-            self.approved = jsonlib.load(self.approved_path)
+            self.approved = jsonload(self.approved_path)
+
+        if not self.cache_path:
+            self.cache_path = self.name + "_cache.json"
+        self.cache_path = Path(self.cache_path)
+        if self.cache_path.is_file():
+            self.cache = jsonload(self.cache_path)
+
+        if not self.motiv_path:
+            self.motiv_path = self.name + "_disamb.json"
+        self.motiv_path = Path(self.motiv_path)
+        if self.motiv_path.is_file():
+            self.disamb_answers = jsonload(self.motiv_path)
 
     def __attrs_post_init__(self):
         self.define_approved()
@@ -179,7 +210,7 @@ class Annotator:
 
     def write(self):
         if self.interactive and self.approved != {}:
-            jsonlib.dump(self.approved, self.approved_path)
+            jsondump(self.approved, self.approved_path)
 
     def parse_csv(self, file):
         df = pd.read_csv(file, keep_default_na=False)
@@ -261,11 +292,11 @@ class UniParser(Annotator):
 
     def _get_field(self, wf, field):
         field_dic = {
-            "wf": wf.wf,
-            "wfGlossed": wf.wfGlossed,
-            "gloss": wf.gloss,
-            "lemma": wf.lemma,
-            "gramm": wf.gramm,
+            "wf": wf["wf"],
+            "wfGlossed": wf["wfGlossed"],
+            "gloss": wf["gloss"],
+            "lemma": wf["lemma"],
+            "gramm": wf["gramm"],
         }
         if field not in field_dic:
             for f, v in wf.otherData:
@@ -285,7 +316,7 @@ class UniParser(Annotator):
     def _compare_ids(self, analysis_list):
         id_list = []
         for analysis in analysis_list:
-            ids = sorted(self._get_field(analysis, "id").split(","))
+            ids = sorted(self["id"].split(","))
             if len(id_list) == 0:
                 id_list = [ids]
             elif ids not in id_list:
@@ -330,7 +361,10 @@ class UniParser(Annotator):
         with open(f"{self.ambiguous_path}", "w", encoding="utf-8") as f:
             f.write("\n\n".join(self.ambiguous))
         if self.interactive:
-            jsonlib.dump(obj=self.approved, path=self.approved_path)
+            jsondump(self.approved, self.approved_path)
+        jsondump(self.cache, self.cache_path)
+        if self.justify_choices:
+            jsondump(self.disamb_answers, self.motiv_path)
 
     def parse(self, record):  # noqa: C901 pylint: disable=too-many-locals
         log.debug(f"""Parsing {record[self.parse_col]} ({record.name})""")
@@ -348,33 +382,42 @@ class UniParser(Annotator):
         unparsable = []
         ambiguous = {}
         gained_approval = False
-        all_analyses = self.parse_word(
-            ortho_strip(record[self.parse_col])
-            .strip(self.word_sep)
-            .split(self.word_sep)
-        )
+        if not record.name in self.cache:
+            all_analyses = self.parse_word(
+                ortho_strip(record[self.parse_col])
+                .strip(self.word_sep)
+                .split(self.word_sep)
+            )
+            all_analyses = [[x.to_json() for x in y] for y in all_analyses]
+            self.cache[record.name] = all_analyses
+        else:
+            all_analyses = self.cache[record.name]
+
         for word_count, wf_analysis in enumerate(all_analyses):
             if len(wf_analysis) > 1:
                 found_past = False
                 obj_choices = []
                 gloss_choices = []
-                word_form = wf_analysis[0].wf
+                word_form = wf_analysis[0]["wf"]
                 ambiguous[word_form] = []
                 for potential_analysis in wf_analysis:
                     ambiguous[word_form].append(str(potential_analysis))
                     potential_obj = added_fields["wfGlossed"] + [
-                        potential_analysis.wfGlossed
+                        potential_analysis["wfGlossed"]
                     ]
-                    potential_gloss = added_fields["gloss"] + [potential_analysis.gloss]
+                    potential_gloss = added_fields["gloss"] + [
+                        potential_analysis["gloss"]
+                    ]
                     obj_choices.append(potential_obj)
                     gloss_choices.append(potential_gloss)
                     if record.name in self.approved:
-                        if (
-                            f"{potential_analysis.wfGlossed}:{potential_analysis.gloss}"
-                            == self.approved[record.name][str(word_count)]
+                        if f'{potential_analysis["wfGlossed"]}:{potential_analysis["gloss"]}' == self.approved[
+                            record.name
+                        ].get(
+                            str(word_count), None
                         ):
-                            log.info(
-                                f"""Using past analysis '{potential_analysis.gloss}' for *{potential_analysis.wf}* in {record.name}"""
+                            log.debug(
+                                f"""Using past analysis '{potential_analysis["gloss"]}' for *{potential_analysis['wf']}* in {record.name}"""
                             )
                             analysis = potential_analysis
                             found_past = True
@@ -393,44 +436,65 @@ class UniParser(Annotator):
                         answers.append("I'd rather not choose.")
                         andic = {answer: i for i, answer in enumerate(answers)}
                         choice = questionary.select(
-                            f"{record.name}: ambiguity for {wf_analysis[0].wf}. "
+                            f'{record.name}: ambiguity for {wf_analysis[0]["wf"]}. '
                             f"Choose correct analysis for\n{record[self.parse_col]}"
                             f"\n'{record[self.trans]}'",
                             choices=answers,
                         ).ask()
                         if choice == "I'd rather not choose.":
-                            analysis = Wordform(self.analyzer.g)
-                            analysis.wf = wf_analysis[0].wf
+                            analysis = Wordform(self.analyzer.g).to_json()
+                            analysis["wf"] = wf_analysis[0]["wf"]
                         else:
                             analysis = wf_analysis[andic[choice]]
+                            print(wf_analysis)
                             gained_approval = True
+                            if self.justify_choices:
+                                # print("you chose", analysis)
+                                # print("in the sentence", record.name)
+                                # print("at position", word_count)
+                                # print("instead of", wf_analysis)
+                                motivation = questionary.text("Why?").ask()
+                                self.disamb_answers.setdefault(analysis["wf"], {})
+                                self.disamb_answers[analysis["wf"]][
+                                    f"{record.name}-{word_count}"
+                                ] = {
+                                    "choice": analysis,
+                                    "alternatives": [
+                                        ana
+                                        for ana in wf_analysis
+                                        if ana["gloss"] != analysis["gloss"]
+                                    ],
+                                    "motivation": motivation,
+                                }
                     elif not self.hide_ambiguity:
                         only_polysemy = self._compare_ids(wf_analysis)
                         analysis = Wordform(self.analyzer.g)
-                        analysis.wf = wf_analysis[0].wf
+                        analysis["id"] = ""
+                        analysis["wf"] = wf_analysis[0]["wf"]
                         for field_name in self.uniparser_fields.values():
                             setattr(analysis, field_name, "?")
                         if only_polysemy:
-                            analysis.wfGlossed = wf_analysis[0].wfGlossed
+                            analysis["wfGlossed"] = wf_analysis[0]["wfGlossed"]
                     else:
                         analysis = wf_analysis[0]
+
             elif len(wf_analysis) == 1:
                 analysis = wf_analysis[0]
             else:
                 print(word_count)
                 print(record)
-            if analysis.wfGlossed == "":
-                unparsable.append(analysis.wf)
+            if analysis["wfGlossed"] == "":
+                unparsable.append(analysis["wf"])
                 for field_name in self.uniparser_fields.values():
                     if field_name == "wfGlossed":
-                        added_fields[field_name].append(analysis.wf)
+                        added_fields[field_name].append(analysis["wf"])
                     else:
                         added_fields[field_name].append("***")
+                    if field_name not in analysis:
+                        analysis[field_name] = ""
             else:
                 for field_name in self.uniparser_fields.values():
-                    added_fields[field_name].append(
-                        self._get_field(analysis, field_name)
-                    )
+                    added_fields[field_name].append(analysis.get(field_name, ""))
         pretty_record = (
             pad_ex(" ".join(added_fields["wfGlossed"]), " ".join(added_fields["gloss"]))
             + "\n"
@@ -461,6 +525,12 @@ class UniParser(Annotator):
         else:
             log.info(f"\n{pretty_record}")
         for output_name, field_name in self.uniparser_fields.items():
+            if field_name == "gramm":
+                added_fields[field_name] = [
+                    ",".join(x) for x in added_fields[field_name]
+                ]
+            # print("setting", output_name, field_name, "to", added_fields[field_name])
+            # print(added_fields)
             record[output_name] = self.word_sep.join(added_fields[field_name])
         if self.interactive and gained_approval:
             self.approved[record.name] = {}
@@ -468,7 +538,7 @@ class UniParser(Annotator):
                 zip(record[self.obj].split(" "), record[self.gloss].split(" "))
             ):
                 self.approved[record.name][i] = f"{obj}:{gloss}"
-            jsonlib.dump(
-                self.approved, self.approved_path, indent=4, ensure_ascii=False
-            )
+            jsondump(self.approved, self.approved_path)
+            if self.justify_choices:
+                jsondump(self.disamb_answers, self.motiv_path)
         return record
