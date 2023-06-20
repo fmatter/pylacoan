@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+* browser GUI
 * ask for and save reasons for choosing one analysis over another
 
 ### Removed
