@@ -40,7 +40,7 @@ def cli(limit, text):
 
 
 @main.command()
-def server():
+def web():
     from pylacoan.server import run_server
 
     run_server()
