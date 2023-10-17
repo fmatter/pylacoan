@@ -17,7 +17,7 @@ from pylacoan.helpers import print_record
 
 
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.DEBUG)
 
 def repr_wf(wf):
     return f"{wf['wf']} '{wf['gloss']}'"
@@ -435,6 +435,7 @@ class UniParser(CliAnnotator):
         parse_target = record[self.parse_col].strip(self.word_sep).split(self.word_sep)
         if not self.use_cache or not record[ID_KEY] in self.cache:
             all_analyses = self.parse_word(parse_target)
+            print("ANALYSES", all_analyses)
             all_analyses = [[x.to_json() for x in y] for y in all_analyses]
         if self.use_cache:
             if record[ID_KEY] in self.cache:

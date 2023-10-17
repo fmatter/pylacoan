@@ -1,28 +1,37 @@
+[tool.poetry]
+name = "pylacoan"
+version = "0.0.3.dev"
+description = "Plug-and-play language corpus annotation."
+authors = ["Florian Matter <flmt@mailbox.org>"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pandas = "^2.0.3"
+tqdm = "^4.66.1"
+flask = "^3.0.0"
+writio = "^0.0.1"
+humidifier = "^0.0.2"
+segments = "^2.2.1"
+questionary = "^2.0.1"
+pyigt = "^2.0.0"
+isort = "^5.12.0"
+
+[tool.poetry.scripts]
+pylacoan = "pylacoan.cli:main"
+
+
+[tool.poetry.group.dev.dependencies]
+invoke = "^2.2.0"
+black = "^23.9.1"
+
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.pylint."MESSAGES.CONTROL"]
-disable=["logging-fstring-interpolation"]
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py37,py38,py39,py310,lint
-skip_missing_interpreters = true
-toxworkdir=/tmp/.pylacoan_tox
-
-[testenv]
-usedevelop = True
-commands = 
-    pytest --cov
-extras = dev
-
-[testenv:lint]
-commands =
-    python -m flake8
-    prospector src
-    prospector tests
-    isort --check-only src
-extras = dev
-"""
+[other]
+pandas = [
+    { version = "^2.0.3", python = "~3.8"},
+    { version = "^2.1.1", python = ">=3.9"}
+]

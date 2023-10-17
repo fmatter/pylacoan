@@ -56,6 +56,7 @@ def insert_pos_rec(rec, pos_list):
 def add_wid(rec):
     rec["wid"] = []
     i = 0
+    input(rec["obj"])
     while i < len(rec["obj"]):
         rec["wid"].append(
             humidify(
@@ -79,7 +80,7 @@ def load_annotations(key, field, data, rec_id=None):
     print(f"Loading annotations from {field['file']}")
     if key not in data:
         if field.get("split"):
-            data[key] = data.apply(lambda x:  [""] * (len(x["srf"])), axis=1)
+            data[key] = data.apply(lambda x: [""] * (len(x["srf"])), axis=1)
         else:
             data[key] = ""
     file_data = load(field["file"]) or {}
@@ -131,7 +132,6 @@ def load_annotations(key, field, data, rec_id=None):
                             if field.get("split"):
                                 values = []
                                 for ref, value in item_data.items():
-
                                     if ref in data.loc[r_id][field["ref"]][idx].split(
                                         " "
                                     ):
@@ -147,7 +147,8 @@ def load_annotations(key, field, data, rec_id=None):
                             else:
                                 for ref, value in item_data.items():
                                     if (
-                                        data.loc[r_id][field["ref"]][idx] == ref
+                                        data.loc[r_id][field["ref"]][idx]
+                                        == ref
                                         # and value
                                     ):
                                         data.loc[r_id][key][idx] = value
@@ -167,7 +168,6 @@ def run_pipeline(data, annotations, pipeline, pos_list):
             data, field_annotations = load_annotations(item["key"], item, data)
             annotations[item["key"]] = field_annotations
         else:
-            print(f"Parsing data ({item.name})")
             res = []
             for x in tqdm(data.to_dict("records")):
                 res.append(item.parse(x))
@@ -176,9 +176,11 @@ def run_pipeline(data, annotations, pipeline, pos_list):
             data = pd.DataFrame.from_dict(res)
             data.index = data["ID"]
     if "grm" in data.columns:
+        input(data)
         data = data.apply(lambda x: insert_pos_rec(x, pos_list=pos_list), axis=1)
         data = data.apply(lambda x: add_wid(x), axis=1)
     return data
+
 
 def printdict(d):
     for k, v in d.items():
@@ -266,7 +268,6 @@ def human_sort(text):
 def print_record(rec, translation=True, highlight_pos=None):
     print_vals = ["srf", "obj", "gls", "pos", "grm", "graid"]
     val_list = [y for x, y in rec.items() if x in print_vals]
-    print(rec["ID"])
     if highlight_pos is not None:
         highlighted = []
         for l in val_list:
@@ -370,7 +371,12 @@ ids: {wf.to_json().get("id", None)}"""
 
 
 def render_boundary(
-    ann, open_clause=False, main_label="C", subr_label="NC", empty="&nbsp;"
+    ann,
+    open_clause=False,
+    open_subr=False,
+    main_label="C",
+    subr_label="NC",
+    empty="&nbsp;",
 ):
     if ann["type"] == "main_clause":
         if open_clause:
@@ -379,7 +385,7 @@ def render_boundary(
             return "<b>[</b>"
     if ann["type"] == "subr_clause":
         return "["
-    if ann["type"] == "subr_end":
+    if ann["type"] == "subr_end" or open_subr:
         return f"]<sub>{subr_label}</sub>"
     return empty
 
@@ -408,10 +414,17 @@ def render_annotation(ann, pos=None, empty="&nbsp;"):
             res.append("V")
         if item.get("type") == "ref":
             if item.get("syn") != "l":
-                if item["syn"] == "p":
-                    res.append("O")
-                else:
-                    res.append(item["syn"].upper())
+                for val, show in {
+                    "p": "O",
+                    "s": "S",
+                    "a": "A",
+                    "l": "L",
+                    "g": "G",
+                }.items():
+                    if item["syn"] == val:
+                        res.append(show)
+                # else
+                #     res.append(item["syn"].upper())
             else:
                 res.append("N")
         if item.get("func") == "adp":
@@ -427,7 +440,7 @@ def render_annotation(ann, pos=None, empty="&nbsp;"):
             return empty
         if ann[0]["type"] in ["other"]:
             return empty
-    return "ann"
+    return empty
 
 
 def render_graid(
@@ -435,6 +448,7 @@ def render_graid(
     aligned_fields,
     initial=False,
     open_clause="",
+    open_subr="",
     current_main="",
     current_subr="",
     empty="&nbsp;",
@@ -474,11 +488,11 @@ def render_graid(
                     )
                 )
                 if pre["type"] == "main_clause":
-                    current_main = pre["placeholder"] or "c"
-                if pre["type"] == "subr_clause":
-                    current_subr = pre["placeholder"] or "sc"
-                if pre["type"] == "main_clause":
+                    current_main = pre["clause_tag"] or "c"
                     open_clause = True
+                if pre["type"] == "subr_clause":
+                    current_subr = pre["clause_tag"] or "sc"
+                    open_subr = True
             for col in aligned_fields:
                 if col in ex:
                     modified_lines[col].append(ex[col][p_counter])
@@ -493,6 +507,7 @@ def render_graid(
                     render_boundary(
                         post,
                         open_clause=open_clause,
+                        open_subr=open_subr,
                         main_label=current_main.upper(),
                         subr_label=current_subr.upper(),
                     )
@@ -503,4 +518,6 @@ def render_graid(
                 modified_lines[col].append(special_empty.get(col, empty))
         for col, values in modified_lines.items():
             ex[col] = values
+        if ex["ID"] == "ctorat-1":
+            print(ex)
     return ex

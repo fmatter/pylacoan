@@ -35,7 +35,6 @@ def cli(limit, text):
     from cliconf import OUTPUT_FILE
     from cliconf import pipeline
     from cliconf import pos_list
-
     parse_csvs(pipeline, INPUT_FILE, OUTPUT_FILE, pos_list)
 
 

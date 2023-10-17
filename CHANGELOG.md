@@ -8,9 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * browser GUI
-* ask for and save reasons for choosing one analysis over another
-
-### Removed
+* concordance search
 
 ### Changed
 * using dicts / JSON throughout

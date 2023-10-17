@@ -13,13 +13,15 @@ from pylacoan.annotator import UniParser
 from pylacoan.helpers import add_wid
 from pylacoan.helpers import get_pos
 from pylacoan.helpers import insert_pos_rec
-from pylacoan.helpers import load_annotations, printdict
+from pylacoan.helpers import load_annotations
 from pylacoan.helpers import load_data
+from pylacoan.helpers import printdict
 from pylacoan.helpers import render_graid
 from pylacoan.helpers import run_pipeline
 
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 AUDIO_PATH = Path(
     "/home/florianm/Dropbox/research/cariban/yawarana/yawarana_corpus/audio"
@@ -57,7 +59,7 @@ splitcols = [
     "gls",
     # "grm",
     "graid",
-    # "refind",
+    "refind",
     # "lex",
     # "mid",
     "pos",
@@ -133,7 +135,7 @@ def defill(rec):
 
 
 def reparse(ex_id, target):
-    print("Reparsing", ex_id)
+    log.debug(f"Reparsing {ex_id}")
     if target == "ort":
         for parser in pipeline:
             if isinstance(parser, dict):
@@ -201,12 +203,13 @@ def export():
 
 
 def set_up_choice(rec, orig_pos, shifted_pos, choice):
+    log.debug(f"Shifting {rec['ID']} from {orig_pos} to {shifted_pos}")
     print(rec)
-    print("orig", orig_pos)
-    print("shifted", shifted_pos)
     if rec["anas"][int(orig_pos)][choice] != "?":
         for field in ["obj", "gls", "lex", "grm", "mid"]:
-            rec[field][int(orig_pos)] = rec["anas"][int(orig_pos)][choice].get(field, "")
+            rec[field][int(orig_pos)] = rec["anas"][int(orig_pos)][choice].get(
+                field, ""
+            )
         rec["pos"][int(orig_pos)] = get_pos(rec["grm"][int(orig_pos)], pos_list)
         uniparser.register_choice(
             rec["ID"], orig_pos, rec["anas"][int(orig_pos)][choice]["srf"], choice
@@ -254,7 +257,7 @@ def update():
             # print("empty value, deleting", key, "for", r_id)
             del annotations[key][r_id]
         else:
-            print(r_id, "is not in", annotations[key])
+            log.debug(f"{r_id} is not in {annotations[key]}")
             raise ValueError(r_id)
         data.loc[r_id] = defill(data.loc[r_id])
         data.loc[r_id] = reparse(r_id, target=key)
@@ -283,6 +286,7 @@ def build_example_div(ex_ids, audio=None):
             continue
         field_data.setdefault(field["lvl"], {})
         field_data[field["lvl"]][key] = field
+    print(field_data)
     return render_template(
         "index.html", exes=ex.to_dict("records"), fields=field_data, top_align="ann"
     )
@@ -305,4 +309,4 @@ def index():
 
 
 def run_server():
-    app.run(debug=False, port=5001)
+    app.run(debug=True, port=5001)

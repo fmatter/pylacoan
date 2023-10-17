@@ -41,7 +41,11 @@ def parse_csvs(pipeline, in_f, out_f, pos_list):
         if col in data.columns:
             data.drop(columns=[col], inplace=True)
     for col, field in fields.items():
-        if field["lvl"] == "word" and col in data.columns and isinstance(data[col].iloc[0], list):
+        if (
+            field["lvl"] == "word"
+            and col in data.columns
+            and isinstance(data[col].iloc[0], list)
+        ):
             if isinstance(data[col].iloc[0][0], list):
                 data[col] = data[col].apply(lambda x: [",".join(y) for y in x])
             data[col] = data[col].apply(lambda x: "\t".join(x))
