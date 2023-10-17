@@ -110,6 +110,7 @@ class UniParser(Annotator):
         self.unresolved = []
 
     def add_analysis(self, record, analysis, anas, ana, wf):
+
         if "," in wf:
             print(wf)
             exit()
@@ -129,9 +130,9 @@ class UniParser(Annotator):
                     record[target].append(analysis.get(field_name, ""))
             elif field_name == "gramm":  # this is a list
                 if not analysis or unparsable:
-                    record[target].append([""])
+                    record[target].append("")
                 else:
-                    record[target].append(analysis.get(field_name, ""))
+                    record[target].append(",".join((analysis.get(field_name, [""]))))
             elif field_name == "gloss":
                 if not analysis:
                     record[target].append("?")

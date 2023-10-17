@@ -25,6 +25,9 @@ pylacoan = "pylacoan.cli:main"
 [tool.poetry.group.dev.dependencies]
 invoke = "^2.2.0"
 black = "^23.9.1"
+mkdocs = "^1.5.3"
+mkdocs-terminal = "^4.4.0"
+mkdocs-site-urls = "^0.2.0"
 
 [build-system]
 requires = ["poetry-core"]
