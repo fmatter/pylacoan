@@ -56,7 +56,8 @@ def insert_pos_rec(rec, pos_list):
 def add_wid(rec):
     rec["wid"] = []
     i = 0
-    input(rec["obj"])
+    if "teijpojra" in " ".join(rec["obj"]):
+        input(rec)
     while i < len(rec["obj"]):
         rec["wid"].append(
             humidify(

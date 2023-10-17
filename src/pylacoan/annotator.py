@@ -100,7 +100,7 @@ class UniParser(Annotator):
         if use_cache:
             print("loading cache")
             start = time.perf_counter()
-            self.cache_path = f"{name}_cache.yaml"
+            self.cache_path = f"{name}_cache.pickle"
             self.cache = load(self.cache_path) or {}
             end = time.perf_counter()
             print(f"Loaded cache in {end - start:0.4f} seconds")

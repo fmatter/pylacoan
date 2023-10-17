@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * using dicts / JSON throughout
+* much faster cache for uniparser
 
 ### Fixed
 * revert back to `.iterrows()` instead of `.to_dict("records")`
