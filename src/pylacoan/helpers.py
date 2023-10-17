@@ -10,6 +10,8 @@ from pyigt import IGT
 from writio import dump
 from writio import load
 from pylacoan.config import INPUT_DIR
+from tqdm import tqdm
+from tqdm import tqdm_pandas
 
 
 SEC_JOIN = ","
@@ -56,22 +58,23 @@ def insert_pos_rec(rec, pos_list):
 def add_wid(rec):
     rec["wid"] = []
     i = 0
-    if "teijpojra" in " ".join(rec["obj"]):
-        input(rec)
     while i < len(rec["obj"]):
+        clitics = [
+            (obj, gls)
+            for (obj, gls) in zip(rec["obj"][i].split("="), rec["gls"][i].split("="))
+        ]
         rec["wid"].append(
-            humidify(
-                rec["obj"][i].replace("-", "").replace("=", "").replace("∅", "")
-                + "-"
-                + rec["gls"][i]
+            "=".join(
+                [
+                    humidify(obj.replace("-", "").replace("∅", "") + "-" + gls)
+                    for obj, gls in clitics
+                ]
             )
         )
         i += 1
     return rec
 
 
-from tqdm import tqdm
-from tqdm import tqdm_pandas
 
 
 def load_annotations(key, field, data, rec_id=None):

@@ -19,6 +19,7 @@ from pylacoan.helpers import print_record
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 def repr_wf(wf):
     return f"{wf['wf']} '{wf['gloss']}'"
 

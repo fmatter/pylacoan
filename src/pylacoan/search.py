@@ -49,10 +49,22 @@ class CorpusFrame(pd.DataFrame):
     clause_list = []
     graid = None
     current_clause = None
-    aligned_cols = ["obj", "gls", "lex", "grm", "mid", "pos", "graid", "wid", "srf", "refind"]
+    aligned_cols = [
+        "obj",
+        "gls",
+        "lex",
+        "grm",
+        "mid",
+        "pos",
+        "graid",
+        "wid",
+        "srf",
+        "refind",
+    ]
 
-
-    def __init__(self, data, resolve_graid_p_word=None, separate_clitics=True, **kwargs):
+    def __init__(
+        self, data, resolve_graid_p_word=None, separate_clitics=True, **kwargs
+    ):
         if isinstance(data, str):
             data = self.read_csv(data)
         self.aligned_cols = [x for x in self.aligned_cols if x in data.columns]
@@ -285,7 +297,6 @@ class CorpusFrame(pd.DataFrame):
             if hit:
                 yield word, idx
 
-
     def iter_words(self, rec, cols):
         # print(rec, cols)
         cols = [x for x in cols if x in rec]
@@ -313,30 +324,32 @@ class CorpusFrame(pd.DataFrame):
         start = None
         hits = []
         kwics = []
-        while (i < len(dicts) and j < len(tokens)):
+        while i < len(dicts) and j < len(tokens):
             print(f"comparing dict {i} with token {j}")
             if tokens[j].match(dicts[i]):
                 print(f"token {j} is matching dict {i}")
                 if start is None:
                     start = i
                     print(f"potential hit from {start}")
-                if j == len(tokens)-1:
+                if j == len(tokens) - 1:
                     input(f"found hit from  {start} to {i}")
-                    print(dicts[start:i+1])
+                    print(dicts[start : i + 1])
                 j += 1
             else:
                 print("no hit")
                 j = 0
                 start = None
-            i+=1
+            i += 1
             kwics.append(self.build_conc_line(rec, position))
-    
+
             res = pd.DataFrame(hits).fillna("")
             kwics = pd.DataFrame(kwics)
             if name:
                 res.to_csv(f"concordances/{name}.csv", index=False)
                 if print_concordance:
-                    kwics.to_html(f"concordances/{name}.html", index=False, escape=False)
+                    kwics.to_html(
+                        f"concordances/{name}.html", index=False, escape=False
+                    )
             if mode == "html":
                 return kwics.to_html(index=False, escape=False)
             return res
