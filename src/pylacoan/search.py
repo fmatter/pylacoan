@@ -6,6 +6,7 @@ from writio import load
 import sys
 from pyscl import parse
 from writio import dump
+from tqdm import tqdm
 
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ cldf_dict = {
     "ID": "rec",
     "Speaker_ID": "spk",
     "Text_ID": "txt",
+    "Translated_Text": "ftr"
 }
 
 
@@ -52,13 +54,12 @@ class CorpusFrame(pd.DataFrame):
     aligned_cols = [
         "obj",
         "gls",
-        "lex",
-        "grm",
-        "mid",
         "pos",
-        "graid",
+        "grm",
+        "lex",
+        "mid",
         "wid",
-        "srf",
+        "graid",
         "refind",
     ]
 
@@ -72,12 +73,14 @@ class CorpusFrame(pd.DataFrame):
             self.search_cols = self.aligned_cols
         else:
             self.search_cols = self.aligned_cols + self.annotated_cols + graidcols
+        if not separate_clitics:
+            self.aligned_cols.append("srf")
+
         for col in self.aligned_cols:
             if not separate_clitics:
                 data[col] = data[col].apply(lambda x: x.split("\t"))
             else:
                 data[col] = data[col].apply(lambda x: re.split("\t|=", x))
-                # input(data[col])
         if resolve_graid_p_word:
             self.resolve_graid_p_word = resolve_graid_p_word
         # if "graid" in data.columns:
@@ -188,9 +191,6 @@ class CorpusFrame(pd.DataFrame):
                             word=word_dict, graid=ann_data["data"], refind=refind_data
                         )
                     )
-                # print(rec)
-                # print(ann_data)
-                # print(refind_data)
                 for post in ann_data["post"]:
                     if "syn" in post and refind_data:
                         post["refind"] = refind_data.pop(0)
@@ -201,28 +201,31 @@ class CorpusFrame(pd.DataFrame):
                 log.warning(f"Leftover refind annotation(s): {refind_data}")
         return graid_recs
 
-    def build_conc_line(self, record, position, context=5, printcol="obj"):
-        prefrom = position - context
+    def _tooltip(self, record, x):
+        return "&#013".join([f"{k}: {record[k][x]}" for k in self.aligned_cols])
+
+    def build_conc_line(self, record, start, end, context=5, printcol="obj"):
+        prefrom  = start - context
         if prefrom < 0:
             prefrom = 0
-        pre = slice(prefrom, position)
-        postto = position + 1 + context
+        pre = slice(prefrom, start)
+        postto = end + 1 + context
         if postto > len(record[printcol]):
             postto = len(record[printcol])
-        post = slice(position + 1, postto)
+        post = slice(end + 1, postto)
         conc_dict = {
-            "Record": record["rec"],
+            "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>""",
+            # "Record": record["rec"],
             "Pre": " ".join([x for x in record[printcol][pre]]),
-            "Word": record[printcol][position],
+            "Hit": " ".join([f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{self._tooltip(record, x)}">{record[printcol][x]}</span>""" for x in range(start, end+1)]),
             "Post": " ".join([x for x in record[printcol][post]]),
             "Translation": record["ftr"],
-            "Link": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>""",
         }
-        if 1 == 1:
-            tooltip = f"lemma: {record['lex'][position]}<br>gramm: {record['grm'][position]}<br>POS: {record['pos'][position]}"
-            conc_dict[
-                "Word"
-            ] = f"""<div class="content show-tooltip" data-html="true" data-toggle="tooltip" data-placement="top" title="{tooltip}">{record[printcol][position]}</div>"""
+        # if 1 == 1:
+        #     tooltip = f"lemma: {record['lex'][start]}<br>gramm: {record['grm'][start]}<br>POS: {record['pos'][start]}"
+        #     conc_dict[
+        #         "Word"
+        #     ] = f"""<div class="content show-tooltip" data-html="true" data-toggle="tooltip" data-placement="top" title="{tooltip}">{record[printcol][start]}</div>"""
         return conc_dict
 
     def parse_graid_rec(self, rec, mode="full"):
@@ -261,45 +264,22 @@ class CorpusFrame(pd.DataFrame):
             wi += 1
         return rec
 
-    def query_rec(
-        self, rec, target, left=None, right=None, full_context=False, **kwargs
-    ):
-        for idx in range(0, len(rec[self.aligned_cols[0]])):
-            word = {}
-            for col, value in rec.items():
-                if col in self.search_cols:
-                    word[col] = rec[col][idx]
-            for col, value in rec.items():
-                if col not in self.search_cols and full_context:
-                    word[col] = rec[col]
-            hit = search_word(word, target)
-            if hit:
-                if left:
-                    for lrange, lquery in left.items():
-                        if idx - int(lrange) < 0:
-                            hit = False
-                        else:
-                            goal = {
-                                col: rec[col][idx - int(lrange)]
-                                for col in self.search_cols
-                            }
-                            hit = search_word(goal, lquery)
-                if right:
-                    for rrange, rquery in right.items():
-                        if idx + int(rrange) >= len(rec[self.aligned_cols[0]]):
-                            hit = False
-                        else:
-                            goal = {
-                                col: rec[col][idx + int(rrange)]
-                                for col in self.search_cols
-                            }
-                            hit = search_word(goal, rquery)
-            if hit:
-                yield word, idx
+    def pprint(self, dic):
+        from terminaltables import AsciiTable
+        lists = [[dic.get("ID", dic.get("id", "field")), "value"]]
+        for k, v in dic.items():
+            if isinstance(v, list):
+                lists.append([k, *v])
+            # else:
+                # print(f"{k}: {v} ({len(v)})")
+        lists[0].extend([" "]*(len(lists[1])-1))
+        table = AsciiTable(lists)
+        print(table.table)
 
     def iter_words(self, rec, cols):
-        # print(rec, cols)
+        # self.pprint(rec)
         cols = [x for x in cols if x in rec]
+        assert len(rec["grm"]) == len(rec["pos"])
         for idx in range(0, len(rec[cols[0]])):
             yield idx, {k: rec[k][idx] for k in cols}
 
@@ -313,43 +293,48 @@ class CorpusFrame(pd.DataFrame):
         **kwargs,
     ):
         tokens = parse(query_string)
-
-        dicts = []
-        for rec in self.to_dict("records"):
+        print(tokens)
+        if not tokens:
+            return f"Invalid query: '{query_string}'"
+        rec_dics = {}
+        for i, rec in tqdm(enumerate(self.to_dict("records"))):
+            rec_dics[i] = []
             for idx, dic in self.iter_words(rec, self.aligned_cols):
-                dicts.append(dic)
-        dump(dicts, "temp.yaml")
-        i = 0
-        j = 0
-        start = None
-        hits = []
-        kwics = []
-        while i < len(dicts) and j < len(tokens):
-            print(f"comparing dict {i} with token {j}")
-            if tokens[j].match(dicts[i]):
-                print(f"token {j} is matching dict {i}")
-                if start is None:
-                    start = i
-                    print(f"potential hit from {start}")
-                if j == len(tokens) - 1:
-                    input(f"found hit from  {start} to {i}")
-                    print(dicts[start : i + 1])
-                j += 1
-            else:
-                print("no hit")
-                j = 0
-                start = None
-            i += 1
-            kwics.append(self.build_conc_line(rec, position))
+                rec_dics[i].append({**dic, **{"idx": idx, "i": i}})
 
-            res = pd.DataFrame(hits).fillna("")
+        kwics = []
+        for rec_idx, word_dics in rec_dics.items():
+            start = None
+            i = 0
+            j = 0
+            while i < len(word_dics) and j < len(tokens): # iterating through words in record and tokens
+                print(f"comparing record {rec_idx}:{i} with token {j}")
+                if tokens[j].match(word_dics[i]): # a (partial) hit
+                    print(f"token {j} matches {rec_idx}:{i}")
+                    if start is None: 
+                        start = i
+                        print(f"Searching from {rec_idx}:{start}")
+                    if j == len(tokens) - 1:
+                        print(self.iloc[rec_idx])
+                        print(f"Hit at {rec_idx}:{start}-{i} ({j})")
+                        kwics.append(self.build_conc_line(self.iloc[rec_idx], start=start, end=i))
+                        j = 0
+                        start = None
+                    else:
+                        j += 1
+                else:
+                    # print("no hit")
+                    j = 0
+                    start = None
+                i += 1
+        if kwics:
             kwics = pd.DataFrame(kwics)
-            if name:
-                res.to_csv(f"concordances/{name}.csv", index=False)
-                if print_concordance:
+            if print_concordance:
                     kwics.to_html(
                         f"concordances/{name}.html", index=False, escape=False
                     )
-            if mode == "html":
-                return kwics.to_html(index=False, escape=False)
-            return res
+
+        if len(kwics) > 0 and mode == "html":
+            return kwics.to_html(index=False, escape=False)
+
+        return f"No results for '{query_string}'"

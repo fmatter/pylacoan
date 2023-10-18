@@ -47,14 +47,9 @@ def load_data(rename={}):
 def insert_pos_rec(rec, pos_list):
     rec["pos"] = []
     for grm in rec["grm"]:
-        if isinstance(grm, list):
-            if "=" in "".join(grm):
-                print(grm)
-                input(":):)")
-            res = get_pos(",".join(grm), pos_list=pos_list)
-        else:
-            res = grm
+        res = get_pos(grm, pos_list=pos_list)
         rec["pos"].append(res or "?")
+    assert len(rec["grm"]) == len(rec["pos"])
     return rec
 
 
@@ -183,7 +178,6 @@ def run_pipeline(data, annotations, pipeline, pos_list):
             data = pd.DataFrame.from_dict(res)
             data.index = data["ID"]
     if "grm" in data.columns:
-        input(data["grm"])
         data = data.apply(lambda x: insert_pos_rec(x, pos_list=pos_list), axis=1)
         data = data.apply(lambda x: add_wid(x), axis=1)
     return data
@@ -295,17 +289,23 @@ def print_record(rec, translation=True, highlight_pos=None):
 
 def get_pos(tagset, mode="UD", sep=",", pos_list=None):
     """Extracts a POS tag from a tag bundle."""
-    if isinstance(tagset, str):
-        tagset = tagset.split(sep)
     if not pos_list:
         if mode == "UD":
             pos_list = ud_pos
         else:
             pos_list = []
-    for tag in tagset:
-        if tag in pos_list:
-            return tag
-    return ""
+    if isinstance(tagset, list):
+        tagset = ",".join(tagset)
+    clitics = tagset.split("=")
+    res =  []
+    for cltagset in clitics:
+        for tag in cltagset.split(sep):
+            if tag in pos_list:
+                res.append(tag)
+                continue
+    if not res:
+        return ""
+    return "=".join(res)
 
 
 def get_morph_id(id_list, id_dic, obj, gloss="", mode="morphs"):
