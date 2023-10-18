@@ -29,14 +29,15 @@ def main():
 @click.option("--limit", default=None, type=int)
 @click.option("--text", default=None)
 def cli(limit, text):
-    from cliconf import (
+    from conf import (
         INPUT_FILE,
     )  # pylint: disable=import-outside-toplevel,import-error
-    from cliconf import OUTPUT_FILE
-    from cliconf import pipeline
-    from cliconf import pos_list
+    from conf import OUTPUT_FILE
+    from conf import FILTER
+    from conf import pipeline
+    from conf import pos_list
 
-    parse_csvs(pipeline, INPUT_FILE, OUTPUT_FILE, pos_list)
+    parse_csvs(pipeline, OUTPUT_FILE, FILTER, pos_list)
 
 
 @main.command()

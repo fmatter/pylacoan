@@ -240,7 +240,7 @@ class CorpusFrame(pd.DataFrame):
             conc_dict = {
                 "Record": record["rec"],
                 "Pre": " ".join([x for x in record[printcol][pre]]),
-                "Hit": " ".join([x for x in record[printcol][start:end+1]]),
+                "Hit": " ".join([x for x in record[printcol][start : end + 1]]),
                 "Post": " ".join([x for x in record[printcol][post]]),
                 "Translation": record["ftr"],
             }

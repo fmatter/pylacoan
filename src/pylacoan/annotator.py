@@ -88,12 +88,14 @@ class UniParser(Annotator):
         parse_col="srf",
         srf_strip=[",", ".", "!", "?", "¿"],
         use_cache=True,
+        mask_ambiguity=False,
         **kwargs,
     ):
         self.name = name
         self.analyzer = analyzer
         self.parse_col = parse_col
         self.annotated_path = f"{name}.yaml"
+        self.mask_ambiguity = mask_ambiguity
         self.annotated = load(self.annotated_path) or {}
         if len(analyzer.g.paradigms) == 0:
             self.analyzer.load_grammar()
@@ -190,10 +192,16 @@ class UniParser(Annotator):
                 srf = ortho_strip(analysis["wf"], strip=self.srf_strip)
                 ana = ""
                 anas = {}
+            else:
+                print(wf_analysis)
+                input("OH OH")
             if not analysis:
-                log.debug(
-                    f"Unresolved analytical ambiguity for {srf} in {record[ID_KEY]}"
-                )
+                if self.mask_ambiguity:
+                    analysis = wf_analysis[0]
+                else:
+                    log.debug(
+                        f"Unresolved analytical ambiguity for {srf} in {record[ID_KEY]}"
+                    )
                 self.unresolved.append(
                     {"rec": record[ID_KEY], "form": srf, "txt": record["txt"]}
                 )

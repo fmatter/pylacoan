@@ -33,12 +33,17 @@ log = logging.getLogger(__name__)
 ud_pos = ["v"]
 
 
-def load_data(rename={}):
-    print("Loading data")
+def load_data(rename={}, filter_params={}):
+    log.info("Loading data")
     dfs = []
     for file in INPUT_DIR.glob("*.csv"):
         dfs.append(load(file, index_col="ID"))
     data = pd.concat(dfs)
+    for k, v in filter_params.items():
+        if isinstance(v, list):
+            data = data[data[k] == v[0]]
+        else:
+            data = data[data[k] == v]
     data.rename(columns=rename, inplace=True)
     data["ID"] = data.index
     return data

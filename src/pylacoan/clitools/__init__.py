@@ -25,7 +25,7 @@ def parse_df(parser_list, out_f, df, interactive):
     df.to_csv(OUTPUT_DIR / out_f)
 
 
-def parse_csvs(pipeline, in_f, out_f, pos_list):
+def parse_csvs(pipeline, out_f, filter_params=None, pos_list=None):
     fields = {x["key"]: x for x in pipeline if isinstance(x, dict)}
     data = load_data(
         rename={
@@ -33,10 +33,11 @@ def parse_csvs(pipeline, in_f, out_f, pos_list):
             "Translated_Text": "oft",
             "Speaker_ID": "spk",
             "Text_ID": "txt",
-        }
+        },
+        filter_params=filter_params,
     )
     annotations = {}
-    data = run_pipeline(data, annotations, pipeline, pos_list=pos_list)
+    data = run_pipeline(data, annotations, pipeline, pos_list=pos_list or [])
     for col in ["ana", "anas", "audio"]:
         if col in data.columns:
             data.drop(columns=[col], inplace=True)
