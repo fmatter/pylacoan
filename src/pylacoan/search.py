@@ -7,6 +7,7 @@ import sys
 from pyscl import parse
 from writio import dump
 from tqdm import tqdm
+import jinja2
 
 
 log = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ cldf_dict = {
     "ID": "rec",
     "Speaker_ID": "spk",
     "Text_ID": "txt",
-    "Translated_Text": "ftr"
+    "Translated_Text": "ftr",
 }
 
 
@@ -80,7 +81,9 @@ class CorpusFrame(pd.DataFrame):
             if not separate_clitics:
                 data[col] = data[col].apply(lambda x: x.split("\t"))
             else:
+                # data[col] = data[col].apply(lambda x: x.replace("=", "=WORTHIT"))
                 data[col] = data[col].apply(lambda x: re.split("\t|=", x))
+                # data[col] = data[col].apply(lambda x: [y.replace("WORTHIT", "=") for y in x])
         if resolve_graid_p_word:
             self.resolve_graid_p_word = resolve_graid_p_word
         # if "graid" in data.columns:
@@ -201,11 +204,14 @@ class CorpusFrame(pd.DataFrame):
                 log.warning(f"Leftover refind annotation(s): {refind_data}")
         return graid_recs
 
-    def _tooltip(self, record, x):
-        return "&#013".join([f"{k}: {record[k][x]}" for k in self.aligned_cols])
+    def _tooltip(self, record, i, printcol):
+        content = "&#013".join([f"{k}: {record[k][i]}" for k in self.aligned_cols])
+        return f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{content}">{record[printcol][i]}</span>"""
 
-    def build_conc_line(self, record, start, end, context=5, printcol="obj"):
-        prefrom  = start - context
+    def build_conc_line(
+        self, record, start, end, context=5, printcol="obj", mode="rich"
+    ):
+        prefrom = start - context
         if prefrom < 0:
             prefrom = 0
         pre = slice(prefrom, start)
@@ -213,19 +219,31 @@ class CorpusFrame(pd.DataFrame):
         if postto > len(record[printcol]):
             postto = len(record[printcol])
         post = slice(end + 1, postto)
-        conc_dict = {
-            "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>""",
-            # "Record": record["rec"],
-            "Pre": " ".join([x for x in record[printcol][pre]]),
-            "Hit": " ".join([f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{self._tooltip(record, x)}">{record[printcol][x]}</span>""" for x in range(start, end+1)]),
-            "Post": " ".join([x for x in record[printcol][post]]),
-            "Translation": record["ftr"],
-        }
-        # if 1 == 1:
-        #     tooltip = f"lemma: {record['lex'][start]}<br>gramm: {record['grm'][start]}<br>POS: {record['pos'][start]}"
-        #     conc_dict[
-        #         "Word"
-        #     ] = f"""<div class="content show-tooltip" data-html="true" data-toggle="tooltip" data-placement="top" title="{tooltip}">{record[printcol][start]}</div>"""
+        if mode == "rich":
+            conc_dict = {
+                "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>""",
+                # "Record": record["rec"],
+                "Pre": " ".join(
+                    [self._tooltip(record, i, printcol) for i in range(prefrom, start)]
+                ),
+                "Hit": "<b>"
+                + " ".join(
+                    [self._tooltip(record, x, printcol) for x in range(start, end + 1)]
+                )
+                + "</b>",
+                "Post": " ".join(
+                    [self._tooltip(record, i, printcol) for i in range(end + 1, postto)]
+                ),
+                "Translation": record["ftr"],
+            }
+        elif mode == "bare":
+            conc_dict = {
+                "Record": record["rec"],
+                "Pre": " ".join([x for x in record[printcol][pre]]),
+                "Hit": " ".join([x for x in record[printcol][start:end+1]]),
+                "Post": " ".join([x for x in record[printcol][post]]),
+                "Translation": record["ftr"],
+            }
         return conc_dict
 
     def parse_graid_rec(self, rec, mode="full"):
@@ -266,17 +284,20 @@ class CorpusFrame(pd.DataFrame):
 
     def pprint(self, dic):
         from terminaltables import AsciiTable
+
+        singles = []
         lists = [[dic.get("ID", dic.get("id", "field")), "value"]]
         for k, v in dic.items():
-            if isinstance(v, list):
-                lists.append([k, *v])
-            # else:
-                # print(f"{k}: {v} ({len(v)})")
-        lists[0].extend([" "]*(len(lists[1])-1))
+            if not isinstance(v, list):
+                singles.append(f"{k}: {v} ({len(v)})")
+        for col in self.aligned_cols:
+            lists.append([col, *dic[col]])
+        lists[0].extend([" "] * (len(lists[1]) - 1))
         table = AsciiTable(lists)
         print(table.table)
 
     def iter_words(self, rec, cols):
+        # print(rec["grm"], rec["pos"], sep="\n")
         # self.pprint(rec)
         cols = [x for x in cols if x in rec]
         assert len(rec["grm"]) == len(rec["pos"])
@@ -294,8 +315,14 @@ class CorpusFrame(pd.DataFrame):
     ):
         tokens = parse(query_string)
         print(tokens)
-        if not tokens:
-            return f"Invalid query: '{query_string}'"
+        alternatives = [f'[obj="{query_string}"]']
+        i = 0
+        while not tokens:
+            query_string = alternatives[i]
+            tokens = parse(query_string)
+            i += 1
+            if i >= len(alternatives):
+                return f"Invalid query: '{query_string}'"
         rec_dics = {}
         for i, rec in tqdm(enumerate(self.to_dict("records"))):
             rec_dics[i] = []
@@ -303,21 +330,31 @@ class CorpusFrame(pd.DataFrame):
                 rec_dics[i].append({**dic, **{"idx": idx, "i": i}})
 
         kwics = []
+        bare_kwics = []
         for rec_idx, word_dics in rec_dics.items():
             start = None
             i = 0
             j = 0
-            while i < len(word_dics) and j < len(tokens): # iterating through words in record and tokens
-                print(f"comparing record {rec_idx}:{i} with token {j}")
-                if tokens[j].match(word_dics[i]): # a (partial) hit
-                    print(f"token {j} matches {rec_idx}:{i}")
-                    if start is None: 
+            while i < len(word_dics) and j < len(
+                tokens
+            ):  # iterating through words in record and tokens
+                # print(f"comparing record {rec_idx}:{i} with token {j}")
+                if tokens[j].match(word_dics[i]):  # a (partial) hit
+                    # print(f"token {j} matches {rec_idx}:{i}")
+                    if start is None:
                         start = i
-                        print(f"Searching from {rec_idx}:{start}")
+                        # print(f"Searching from {rec_idx}:{start}")
                     if j == len(tokens) - 1:
-                        print(self.iloc[rec_idx])
-                        print(f"Hit at {rec_idx}:{start}-{i} ({j})")
-                        kwics.append(self.build_conc_line(self.iloc[rec_idx], start=start, end=i))
+                        # print(self.iloc[rec_idx])
+                        # print(f"Hit at {rec_idx}:{start}-{i} ({j})")
+                        kwics.append(
+                            self.build_conc_line(self.iloc[rec_idx], start=start, end=i)
+                        )
+                        bare_kwics.append(
+                            self.build_conc_line(
+                                self.iloc[rec_idx], start=start, end=i, mode="bare"
+                            )
+                        )
                         j = 0
                         start = None
                     else:
@@ -329,12 +366,19 @@ class CorpusFrame(pd.DataFrame):
                 i += 1
         if kwics:
             kwics = pd.DataFrame(kwics)
-            if print_concordance:
-                    kwics.to_html(
-                        f"concordances/{name}.html", index=False, escape=False
-                    )
-
+            if print_concordance and name:
+                loader = jinja2.FileSystemLoader(searchpath="concserve/templates/")
+                env = jinja2.Environment(loader=loader)
+                template = env.get_template("view.j2")
+                res = template.render(
+                    {
+                        "content": kwics.to_html(index=False, escape=False),
+                        "legend": f"Search results for {query_string}",
+                    }
+                )
+                dump(res, f"concordances/{name}.html")
+        if bare_kwics:
+            dump(bare_kwics, f"concordances/{name}.csv")
         if len(kwics) > 0 and mode == "html":
             return kwics.to_html(index=False, escape=False)
-
         return f"No results for '{query_string}'"

@@ -95,22 +95,21 @@ class UniParser(Annotator):
         self.parse_col = parse_col
         self.annotated_path = f"{name}.yaml"
         self.annotated = load(self.annotated_path) or {}
-        self.analyzer.load_grammar()
+        if len(analyzer.g.paradigms) == 0:
+            self.analyzer.load_grammar()
         self.srf_strip = srf_strip
         if use_cache:
-            print("loading cache")
             start = time.perf_counter()
             self.cache_path = f"{name}_cache.pickle"
             self.cache = load(self.cache_path) or {}
             end = time.perf_counter()
-            print(f"Loaded cache in {end - start:0.4f} seconds")
+            log.info(f"Loaded cache in {end - start:0.4f} seconds")
 
         else:
             self.cache = None
         self.unresolved = []
 
     def add_analysis(self, record, analysis, anas, ana, wf):
-
         if "," in wf:
             print(wf)
             exit()
@@ -163,6 +162,10 @@ class UniParser(Annotator):
         for w_idx, wf_analysis in enumerate(all_analyses):
             analysis = None
             if len(wf_analysis) > 1:
+                if len(wf_analysis) == 2 and wf_analysis[0] == wf_analysis[1]:
+                    log.error("Your parsing is creating copies of the same analysis")
+                    log.erro(wf_analysis)
+                    exit()
                 anas = {"?": "?"}
                 ana = "?"
                 srf = ortho_strip(wf_analysis[0]["wf"], strip=self.srf_strip)

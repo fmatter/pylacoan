@@ -48,6 +48,9 @@ def insert_pos_rec(rec, pos_list):
     rec["pos"] = []
     for grm in rec["grm"]:
         res = get_pos(grm, pos_list=pos_list)
+        # if rec["ID"] == "ctoyucairdi-63":
+        #     print(grm)
+        #     input(res)
         rec["pos"].append(res or "?")
     assert len(rec["grm"]) == len(rec["pos"])
     return rec
@@ -71,8 +74,6 @@ def add_wid(rec):
         )
         i += 1
     return rec
-
-
 
 
 def load_annotations(key, field, data, rec_id=None):
@@ -297,7 +298,7 @@ def get_pos(tagset, mode="UD", sep=",", pos_list=None):
     if isinstance(tagset, list):
         tagset = ",".join(tagset)
     clitics = tagset.split("=")
-    res =  []
+    res = []
     for cltagset in clitics:
         for tag in cltagset.split(sep):
             if tag in pos_list:
