@@ -42,14 +42,14 @@
 <!-- concordance view -->
 
 <div class="container-fluid h-100">
+    <div class="container-fluid mt-2" id="results"> {{ content | safe }} </div>
     <div class="input-group input-group-lg">
         <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
         <input type="text" id="query" aria-describedby="sizing-addon1">
-        <button id="search" type="button" class="btn btn-primary" aria-label="Left Align">
+        <button id="search" type="button" class="btn btn-dark" aria-label="Left Align">
             <span class="glyphicon glyphicon-search" aria-hidden="true">search</span>
         </button>
     </div>
-    <div class="container-fluid mt-2" id="results"> {{ content | safe }} </div>
 </div>
 
 {% endblock %}

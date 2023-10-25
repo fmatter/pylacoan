@@ -324,7 +324,6 @@ def concordance():
 
 @app.route("/fields")
 def get_conc_fields():
-    print(request)
     return conc_fields
 
 
