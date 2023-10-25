@@ -9,6 +9,10 @@ from flask import render_template
 from flask import request
 from flask import send_from_directory
 from writio import dump
+import json
+import re
+from pylacoan.search import CorpusFrame
+from flask_bootstrap import Bootstrap5
 from pylacoan.annotator import UniParser
 from pylacoan.helpers import add_wid
 from pylacoan.helpers import get_pos
@@ -18,60 +22,21 @@ from pylacoan.helpers import load_data
 from pylacoan.helpers import printdict
 from pylacoan.helpers import render_graid
 from pylacoan.helpers import run_pipeline
-
+from conf import AUDIO_PATH
+from flask import g
+AUDIO_PATH = Path(AUDIO_PATH)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-AUDIO_PATH = Path(
-    "/home/florianm/Dropbox/research/cariban/yawarana/yawarana_corpus/audio"
-)
 
 app = Flask(__name__, static_url_path="/static")
+bootstrap = Bootstrap5(app)
 wlog = logging.getLogger("werkzeug")
 wlog.setLevel(logging.ERROR)
 
-fields = {x["key"]: x for x in pipeline if isinstance(x, dict)}
 
-data = load_data(
-    rename={
-        "Primary_Text": "ort",
-        "Translated_Text": "oft",
-        "Speaker_ID": "spk",
-        "Text_ID": "txt",
-    }
-)
-
-uniparser = None
-for p in pipeline:
-    if isinstance(p, UniParser):
-        uniparser = p
-
-annotations = {}
-data = run_pipeline(data, annotations, pipeline, pos_list)
-data.index = data["ID"]
-audios = []
-for x in AUDIO_PATH.iterdir():
-    audios.append(x.stem)
-data["audio"] = data["ID"].apply(lambda x: x in audios)
-splitcols = [
-    "obj",
-    "gls",
-    # "grm",
-    "graid",
-    "refind",
-    # "lex",
-    # "mid",
-    "pos",
-    # "wid",
-    # "ana",
-    # "anas",
-    "srf",
-]
-aligned_fields = [x for x in splitcols if x not in []]
-
-
-def parse_graid(df, target="all"):
+def parse_graid(df, aligned_fields, target="all"):
     open_clause = False
     clause_initial = []
     current_main = ""
@@ -111,13 +76,50 @@ def parse_graid(df, target="all"):
         )
         yield ex
 
+fields = {x["key"]: x for x in pipeline if isinstance(x, dict)}
 
-text_dic = {}
+data = load_data(
+    rename={
+        "Primary_Text": "ort",
+        "Translated_Text": "oft",
+        "Speaker_ID": "spk",
+        "Text_ID": "txt",
+    }
+)
+
+uniparser = None
+for p in pipeline:
+    if isinstance(p, UniParser):
+        uniparser = p
+
+annotations = {}
+data = run_pipeline(data, annotations, pipeline, pos_list)
+data.index = data["ID"]
+audios = []
+for x in AUDIO_PATH.iterdir():
+    audios.append(x.stem)
+data["audio"] = data["ID"].apply(lambda x: x in audios)
+splitcols = [
+    "obj",
+    "gls",
+    # "grm",
+    "graid",
+    "refind",
+    # "lex",
+    # "mid",
+    "pos",
+    # "wid",
+    # "ana",
+    # "anas",
+    "srf",
+]
+aligned_fields = [x for x in splitcols if x not in []]
+texts = {}
 if "graid" in data.columns:
-    data = pd.DataFrame.from_dict(parse_graid(data))
+    data = pd.DataFrame.from_dict(parse_graid(data, aligned_fields))
 for text_id, textdata in data.groupby("txt"):
-    text_dic[text_id] = list(textdata.index)
-
+    texts[text_id] = list(textdata.index)
+    
 
 def save():
     for key, field in fields.items():
@@ -174,14 +176,14 @@ def audio(filename):
 
 
 @app.route("/texts")
-def texts():
-    return list(text_dic.keys())
+def get_texts():
+    return list(texts.keys())
 
 
 @app.route("/textrecords")
 def textrecords():
     text_id = request.args.get("textID")
-    return text_dic[text_id]
+    return texts[text_id]
 
 
 @app.route("/export")
@@ -292,21 +294,45 @@ def build_example_div(ex_ids, audio=None):
     )
 
 
-@app.route("/")
+@app.route("/annotation")
 def index():
-    return render_template(
-        "index.html", example_ids=[f"ctorat-{i+1}" for i in range(46)]
-    )
-    return render_template(
-        "index.html", example_ids=[f"convrisamaj-{i+1}" for i in range(53)]
-    )
-    return render_template(
-        "index.html", example_ids=[f"histanfo-{i+1}" for i in range(55)]
-    )
-    return render_template(
-        "index.html", example_ids=[f"convsuenmaj-{i+1}" for i in range(135)]
-    )
+    return render_template("annotation.html")
 
+
+@app.route("/annotation/<text_id>")
+def text_view(text_id):
+    return render_template("annotation.html", text_id=text_id)
+
+
+
+
+conc_fields = {x["key"]: x for x in pipeline if isinstance(x, dict) and x["lvl"] == "word"}
+
+
+def resolve_regex(s):
+    if not s:
+        return s
+    for cand in ["*", "!", "^", "$"]:
+        if cand in s:
+            return re.compile(s)
+    return s
+
+@app.route("/concordance")
+def concordance():
+    return render_template("concordance.html", content="")
+
+
+@app.route("/fields")
+def get_conc_fields():
+    print(request)
+    return conc_fields
+
+
+@app.route("/search")
+def search():
+    query = json.loads(request.args.get("query"))
+    df = CorpusFrame("output/full_unsupervised.csv", list_cols=["mid", "grm"])
+    return df.query(query, name=None, full_context=True, mode="html")
 
 def run_server():
     app.run(debug=True, port=5001)

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    {% block head %}
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    {% block styles %}
+    <style type="text/css">
+        input { font-size: 17pt;}
+        /*width: 90px; height: 390px; border: 1px solid #999999; padding: 5px; */
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" crossorigin="anonymous"></script>    
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+
+    <!-- Bootstrap CSS -->
+    {{ bootstrap.load_css() }}
+    {% endblock %}
+
+    <title>corpus search</title>
+
+    {% endblock %}
+</head>
+<body>
+    {% block content %}
+
+    <div class="d-flex" id="wrapper">
+        <div id="page-content-wrapper">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+
+                    <div class="navbar-nav">
+                    <a class="nav-link" aria-current="page" href="/annotation">Annotation</a>
+                    <a class="nav-link active" aria-current="page" href="#">Concordance search</a>
+                </div>
+            </div>
+        </nav>
+
+<!-- concordance view -->
+
+<div class="container-fluid h-100">
+    <div class="input-group input-group-lg">
+        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+        <input type="text" id="query" aria-describedby="sizing-addon1">
+        <button id="search" type="button" class="btn btn-primary" aria-label="Left Align">
+            <span class="glyphicon glyphicon-search" aria-hidden="true">search</span>
+        </button>
+    </div>
+    <div class="container-fluid mt-2" id="results"> {{ content | safe }} </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Optional JavaScript -->
+{{ bootstrap.load_js() }}
+
+<script type="text/javascript">
+    // $.get({url: "/fields", async: false, success: function(data){
+    //     for (x in data){
+    //         $("#fields-wrapper").append(
+    //             "<input class='field' id='"+x+"' placeholder='"+data[x]["label"]+"'>"
+    //         )
+    //     }
+    // }});
+
+    $(document).ready(function(){
+
+        $("#query").keypress(function(e){
+            if(e.which == 13){
+                var inputVal = $(this).val();
+                runQuery();
+            }
+        });
+
+        // $.ajax({
+        //     url: "/search",
+        //     data: {query: JSON.stringify('[obj="jra"]')},
+        //     success: function(data){
+        //         $("#results").html(data)
+        //         $('table').DataTable();
+        //     }
+        // });
+
+
+        function runQuery() {
+            const query = $("#query").val();
+            console.log(query)
+            $.ajax({
+                url: "/search",
+                data: {query: JSON.stringify(query)},
+                success: function(data){
+                    $("#results").html(data)
+                    $('table').DataTable();
+                }
+            });
+        }
+
+        $("#search" ).click(function() {
+            runQuery();
+        });
+
+
+    });
+
+</script>
+
+{% endblock %}
+</body>
+</html>

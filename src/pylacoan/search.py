@@ -12,8 +12,6 @@ import jinja2
 
 log = logging.getLogger(__name__)
 
-record_level = ["rec", "spk", "txt"]
-graidcols = ["type", "syn", "anim", "ref", "pred", "form", "func"]
 cldf_dict = {
     "Analyzed_Word": "obj",
     "Primary_Text": "ort",
@@ -47,11 +45,13 @@ def empty_object(ann):
 
 class CorpusFrame(pd.DataFrame):
     searchcol = "Object"
-    annotated_cols = ["refind"]
+    annotated_cols = ["refind", "graid"]
     search_cols = []
     clause_list = []
     graid = None
     current_clause = None
+    record_level = ["rec", "spk", "txt"]
+    graid_cols = ["type", "syn", "anim", "ref", "pred", "form", "func"]
     aligned_cols = [
         "obj",
         "gls",
@@ -60,12 +60,15 @@ class CorpusFrame(pd.DataFrame):
         "lex",
         "mid",
         "wid",
-        "graid",
-        "refind",
     ]
 
     def __init__(
-        self, data, resolve_graid_p_word=None, separate_clitics=True, **kwargs
+        self,
+        data,
+        resolve_graid_p_word=None,
+        separate_clitics=True,
+        list_cols=None,
+        **kwargs,
     ):
         if isinstance(data, str):
             data = self.read_csv(data)
@@ -73,12 +76,13 @@ class CorpusFrame(pd.DataFrame):
         if "graid" not in data.columns:
             self.search_cols = self.aligned_cols
         else:
-            self.search_cols = self.aligned_cols + self.annotated_cols + graidcols
+            self.aligned_cols = self.aligned_cols + self.annotated_cols
+            self.search_cols = self.aligned_cols + self.graid_cols
         if not separate_clitics:
             self.aligned_cols.append("srf")
 
         for col in self.aligned_cols:
-            if not separate_clitics:
+            if not separate_clitics or "graid" in data.columns:
                 data[col] = data[col].apply(lambda x: x.split("\t"))
             else:
                 # data[col] = data[col].apply(lambda x: x.replace("=", "=WORTHIT"))
@@ -86,15 +90,18 @@ class CorpusFrame(pd.DataFrame):
                 # data[col] = data[col].apply(lambda x: [y.replace("WORTHIT", "=") for y in x])
         if resolve_graid_p_word:
             self.resolve_graid_p_word = resolve_graid_p_word
-        # if "graid" in data.columns:
-        #     # print(data[["refind", "graid"]])
-        #     graid_data = pd.DataFrame.from_dict(
-        #         self.get_graid_recs(data.to_dict("records"))
-        #     ).fillna("")
-        #     graid_data = self.add_clause_ids(graid_data.to_dict("records"))
-        #     graid_data = self.get_information_status(graid_data)
-        #     graid_data = pd.DataFrame.from_dict(graid_data).fillna("")
-        #     self.graid = graid_data
+        if "graid" in data.columns:
+            # print(data[["refind", "graid"]])
+            graid_data = pd.DataFrame.from_dict(
+                self.get_graid_recs(data.to_dict("records"))
+            ).fillna("")
+            graid_data = self.add_clause_ids(graid_data.to_dict("records"))
+            graid_data = self.get_information_status(graid_data)
+            graid_data = pd.DataFrame.from_dict(graid_data).fillna("")
+            self.graid = graid_data
+        if list_cols:
+            for col in list_cols:
+                data[col] = data[col].apply(lambda x: [y.split(",") for y in x])
         super().__init__(data, **kwargs)
 
     def read_csv(self, csv_file):
@@ -158,7 +165,7 @@ class CorpusFrame(pd.DataFrame):
         return res
 
     def add_record_param(self, item, rec):
-        for k in record_level:
+        for k in self.record_level:
             item[k] = rec[k]
         return item
 
@@ -204,83 +211,111 @@ class CorpusFrame(pd.DataFrame):
                 log.warning(f"Leftover refind annotation(s): {refind_data}")
         return graid_recs
 
-    def _tooltip(self, record, i, printcol):
+    def _tooltip(self, record, i, target_col):
         content = "&#013".join([f"{k}: {record[k][i]}" for k in self.aligned_cols])
-        return f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{content}">{record[printcol][i]}</span>"""
+        return f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{content}">{record[target_col][i]}</span>"""
 
     def build_conc_line(
-        self, record, start, end, context=5, printcol="obj", mode="rich"
+        self, record, start, end, context=5, target_col="obj", add_col=None, mode="rich"
     ):
+        add_col = add_col or []
         prefrom = start - context
         if prefrom < 0:
             prefrom = 0
         pre = slice(prefrom, start)
         postto = end + 1 + context
-        if postto > len(record[printcol]):
-            postto = len(record[printcol])
+        if postto > len(record[target_col]):
+            postto = len(record[target_col])
         post = slice(end + 1, postto)
         if mode == "rich":
             conc_dict = {
-                "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>""",
+                "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>"""f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>""",
                 # "Record": record["rec"],
                 "Pre": " ".join(
-                    [self._tooltip(record, i, printcol) for i in range(prefrom, start)]
+                    [
+                        self._tooltip(record, i, target_col)
+                        for i in range(prefrom, start)
+                    ]
                 ),
                 "Hit": "<b>"
                 + " ".join(
-                    [self._tooltip(record, x, printcol) for x in range(start, end + 1)]
+                    [
+                        self._tooltip(record, x, target_col)
+                        for x in range(start, end + 1)
+                    ]
                 )
                 + "</b>",
                 "Post": " ".join(
-                    [self._tooltip(record, i, printcol) for i in range(end + 1, postto)]
+                    [
+                        self._tooltip(record, i, target_col)
+                        for i in range(end + 1, postto)
+                    ]
                 ),
                 "Translation": record["ftr"],
             }
         elif mode == "bare":
+            TABSEP = "\t"
             conc_dict = {
                 "Record": record["rec"],
-                "Pre": " ".join([x for x in record[printcol][pre]]),
-                "Hit": " ".join([x for x in record[printcol][start : end + 1]]),
-                "Post": " ".join([x for x in record[printcol][post]]),
+                "Pre": " ".join([x for x in record[target_col][pre]]),
+                "Hit": " ".join([x for x in record[target_col][start : end + 1]]),
+                "Post": " ".join([x for x in record[target_col][post]]),
                 "Translation": record["ftr"],
             }
+
+            def _delist(item):
+                if isinstance(item, list):
+                    return ",".join(item)
+                return item
+
+            for col in add_col:
+                conc_dict[f"pre_{col}"] = TABSEP.join(
+                    [_delist(x) for x in record[col][pre]]
+                )
+                conc_dict[f"hit_{col}"] = TABSEP.join(
+                    [_delist(x) for x in record[col][start : end + 1]]
+                )
+                conc_dict[f"post_{col}"] = TABSEP.join(
+                    [_delist(x) for x in record[col][post]]
+                )
+
         return conc_dict
 
-    def parse_graid_rec(self, rec, mode="full"):
-        if "graid" not in rec:
-            return rec
-        for gcol in graidcols:
-            rec[gcol] = []
-        wi = 0
-        while wi < len(rec[self.search_cols[0]]):  # p-word index
-            ann = rec["graid"][wi]
-            # print(wi, ann, rec["graid"])
-            if ann == "":
-                for gcol in graidcols:
-                    rec[gcol].append("")
-            else:
-                annotations = pygraid.parse_annotation(ann)
-                for annotation_group in annotations:
-                    if mode == "words":
-                        annotation_group = annotation_group[0:1]  # todo fix this
-                    for ann_dict in annotation_group:
-                        # print(ann_dict)
-                        if ann_dict["type"] in ["boundary"]:
-                            if not self.current_clause:
-                                self.current_clause = 1
-                            else:
-                                self.current_clause += 1
-                        ann_dict["clause"] = self.current_clause
-                        if empty_object(ann_dict):
-                            for wcol in self.aligned_cols + ["graid"]:
-                                if wcol == "obj":
-                                    rec[wcol].insert(wi, "0")
-                                elif wcol != "refind":
-                                    rec[wcol].insert(wi, "")
-                        for gcol in graidcols:
-                            rec[gcol].append(ann_dict.get(gcol, ""))
-            wi += 1
-        return rec
+    # def parse_graid_rec(self, rec, mode="full"):
+    #     if "graid" not in rec:
+    #         return rec
+    #     for gcol in graidcols:
+    #         rec[gcol] = []
+    #     wi = 0
+    #     while wi < len(rec[self.search_cols[0]]):  # p-word index
+    #         ann = rec["graid"][wi]
+    #         # print(wi, ann, rec["graid"])
+    #         if ann == "":
+    #             for gcol in graidcols:
+    #                 rec[gcol].append("")
+    #         else:
+    #             annotations = pygraid.parse_annotation(ann)
+    #             for annotation_group in annotations:
+    #                 if mode == "words":
+    #                     annotation_group = annotation_group[0:1]  # todo fix this
+    #                 for ann_dict in annotation_group:
+    #                     # print(ann_dict)
+    #                     if ann_dict["type"] in ["boundary"]:
+    #                         if not self.current_clause:
+    #                             self.current_clause = 1
+    #                         else:
+    #                             self.current_clause += 1
+    #                     ann_dict["clause"] = self.current_clause
+    #                     if empty_object(ann_dict):
+    #                         for wcol in self.aligned_cols + ["graid"]:
+    #                             if wcol == "obj":
+    #                                 rec[wcol].insert(wi, "0")
+    #                             elif wcol != "refind":
+    #                                 rec[wcol].insert(wi, "")
+    #                     for gcol in self.graid_cols:
+    #                         rec[gcol].append(ann_dict.get(gcol, ""))
+    #     wi += 1
+    # return rec
 
     def pprint(self, dic):
         from terminaltables import AsciiTable
@@ -300,21 +335,23 @@ class CorpusFrame(pd.DataFrame):
         # print(rec["grm"], rec["pos"], sep="\n")
         # self.pprint(rec)
         cols = [x for x in cols if x in rec]
-        assert len(rec["grm"]) == len(rec["pos"])
+        assert len(rec["grm"]) == len(rec["obj"])
         for idx in range(0, len(rec[cols[0]])):
             yield idx, {k: rec[k][idx] for k in cols}
 
     def query(
         self,
         query_string,
-        full_context=False,
         name=None,
-        print_concordance=True,
+        html=True,
+        csv=False,
         mode="pandas",
+        add_col=["mid", "grm"],
         **kwargs,
     ):
         tokens = parse(query_string)
-        print(tokens)
+        if name:
+            print(f"Name: {name}")
         alternatives = [f'[obj="{query_string}"]']
         i = 0
         while not tokens:
@@ -323,12 +360,13 @@ class CorpusFrame(pd.DataFrame):
             i += 1
             if i >= len(alternatives):
                 return f"Invalid query: '{query_string}'"
+        roundtrip = " ".join(str(x) for x in tokens)
+        print(f"Query: {roundtrip} == {query_string}")
         rec_dics = {}
-        for i, rec in tqdm(enumerate(self.to_dict("records"))):
+        for i, rec in enumerate(self.to_dict("records")):
             rec_dics[i] = []
             for idx, dic in self.iter_words(rec, self.aligned_cols):
                 rec_dics[i].append({**dic, **{"idx": idx, "i": i}})
-
         kwics = []
         bare_kwics = []
         for rec_idx, word_dics in rec_dics.items():
@@ -339,6 +377,7 @@ class CorpusFrame(pd.DataFrame):
                 tokens
             ):  # iterating through words in record and tokens
                 # print(f"comparing record {rec_idx}:{i} with token {j}")
+                # print(word_dics[i])
                 if tokens[j].match(word_dics[i]):  # a (partial) hit
                     # print(f"token {j} matches {rec_idx}:{i}")
                     if start is None:
@@ -352,7 +391,11 @@ class CorpusFrame(pd.DataFrame):
                         )
                         bare_kwics.append(
                             self.build_conc_line(
-                                self.iloc[rec_idx], start=start, end=i, mode="bare"
+                                self.iloc[rec_idx],
+                                start=start,
+                                end=i,
+                                mode="bare",
+                                add_col=add_col,
                             )
                         )
                         j = 0
@@ -364,20 +407,21 @@ class CorpusFrame(pd.DataFrame):
                     j = 0
                     start = None
                 i += 1
+
         if kwics:
             kwics = pd.DataFrame(kwics)
-            if print_concordance and name:
+            if html and name:
                 loader = jinja2.FileSystemLoader(searchpath="concserve/templates/")
                 env = jinja2.Environment(loader=loader)
                 template = env.get_template("view.j2")
                 res = template.render(
                     {
                         "content": kwics.to_html(index=False, escape=False),
-                        "legend": f"Search results for {query_string}",
+                        "legend": f"Search results for {roundtrip}",
                     }
                 )
                 dump(res, f"concordances/{name}.html")
-        if bare_kwics:
+        if bare_kwics and csv:
             dump(bare_kwics, f"concordances/{name}.csv")
         if len(kwics) > 0 and mode == "html":
             return kwics.to_html(index=False, escape=False)
