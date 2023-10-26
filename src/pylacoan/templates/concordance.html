@@ -1,113 +1,69 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    {% block head %}
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    {% block styles %}
-    <style type="text/css">
-        input { font-size: 17pt;}
-        /*width: 90px; height: 390px; border: 1px solid #999999; padding: 5px; */
-    </style>
-
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js" crossorigin="anonymous"></script>    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>concordance search</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link rel="stylesheet" href="{{url_for('static', filename='css/styles.css')}}" />
+    <link rel="stylesheet" href="{{url_for('static', filename='css/pylacoan.css')}}" />
+    <link rel="stylesheet" href="{{url_for('static', filename='css/concordance.css')}}" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
-
-    <!-- Bootstrap CSS -->
-    {{ bootstrap.load_css() }}
-    {% endblock %}
-
-    <title>corpus search</title>
-
-    {% endblock %}
 </head>
 <body>
-    {% block content %}
-
     <div class="d-flex" id="wrapper">
+        <!-- Sidebar-->
+        <div class="border-end bg-white" id="sidebar-wrapper">
+            <div class="sidebar-heading border-bottom bg-light">pylacoan</div>
+            <div class="flist-group list-group-flush" id="filelist"></div>
+        </div>
+        <!-- Page content wrapper-->
         <div id="page-content-wrapper">
-            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <!-- Top navigation-->
+            <nav class="navbar sticky-top navbar-expand-lg navbar-light bg-light border-bottom">
                 <div class="container-fluid">
 
                     <div class="navbar-nav">
-                    <a class="nav-link" aria-current="page" href="/annotation">Annotation</a>
-                    <a class="nav-link active" aria-current="page" href="#">Concordance search</a>
+
+                        <a class="nav-link" aria-current="page" href="/annotation">Annotation</a>
+                        <a class="nav-link active" aria-current="page" href="#">Concordance search</a>
+                    </div>
+
                 </div>
+            </nav>
+
+            <!-- concordance view -->
+            <div class="container-fluid h-100">
+                <div class="container-fluid h-20 m-2"> 
+                    <div class="row">
+                     <div class="col-lg-12">
+                        <div class="input-group input-group-lg">
+                            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            <input type="text" class="form-control input-lg" id="query" placeholder="Query, e.g. [pos=n][pos=postp&obj!=ya]" aria-describedby="sizing-addon1">
+                            <span class="input-group-btn">
+                                <button class="btn btn-dark btn-lg" type="submit">Search</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-        </nav>
-
-<!-- concordance view -->
-
-<div class="container-fluid h-100">
-    <div class="container-fluid mt-2" id="results"> {{ content | safe }} </div>
-    <div class="input-group input-group-lg">
-        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
-        <input type="text" id="query" aria-describedby="sizing-addon1">
-        <button id="search" type="button" class="btn btn-dark" aria-label="Left Align">
-            <span class="glyphicon glyphicon-search" aria-hidden="true">search</span>
-        </button>
+            <div class="container-fluid h-20 mt-2" id="results"> {{ content | safe }} </div>
+        </div>
     </div>
 </div>
-
-{% endblock %}
-
-{% block scripts %}
-<!-- Optional JavaScript -->
-{{ bootstrap.load_js() }}
-
-<script type="text/javascript">
-    // $.get({url: "/fields", async: false, success: function(data){
-    //     for (x in data){
-    //         $("#fields-wrapper").append(
-    //             "<input class='field' id='"+x+"' placeholder='"+data[x]["label"]+"'>"
-    //         )
-    //     }
-    // }});
-
-    $(document).ready(function(){
-
-        $("#query").keypress(function(e){
-            if(e.which == 13){
-                var inputVal = $(this).val();
-                runQuery();
-            }
-        });
-
-        // $.ajax({
-        //     url: "/search",
-        //     data: {query: JSON.stringify('[obj="jra"]')},
-        //     success: function(data){
-        //         $("#results").html(data)
-        //         $('table').DataTable();
-        //     }
-        // });
-
-
-        function runQuery() {
-            const query = $("#query").val();
-            console.log(query)
-            $.ajax({
-                url: "/search",
-                data: {query: JSON.stringify(query)},
-                success: function(data){
-                    $("#results").html(data)
-                    $('table').DataTable();
-                }
-            });
-        }
-
-        $("#search" ).click(function() {
-            runQuery();
-        });
-
-
-    });
-
-</script>
-
-{% endblock %}
+<!-- jquery JS-->
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" crossorigin="anonymous"></script>
+<!-- datatables -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+<!-- Bootstrap core JS-->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Core theme JS-->
+<script src="{{url_for('static', filename='js/scripts.js')}}"></script>
+<script src="{{url_for('static', filename='js/concordance.js')}}"></script>
 </body>
 </html>

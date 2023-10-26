@@ -14,7 +14,10 @@ import webbrowser
 def lint(c):
     c.run("isort src")
     c.run("black src")
-
+    for file in Path("src/pylacoan/static/css").iterdir():
+        c.run(f"prettier {file} -w")
+    for file in Path("src/pylacoan/static/js").iterdir():
+        c.run(f"prettier {file} -w")
 
 @task
 def test(c):

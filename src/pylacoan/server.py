@@ -1,18 +1,19 @@
+import json
 import logging
+import re
 from pathlib import Path
 import pandas as pd
 import pygraid
+from conf import AUDIO_PATH
 from conf import pipeline
 from conf import pos_list
 from flask import Flask
+from flask import g
 from flask import render_template
 from flask import request
 from flask import send_from_directory
-from writio import dump
-import json
-import re
-from pylacoan.search import CorpusFrame
 from flask_bootstrap import Bootstrap5
+from writio import dump
 from pylacoan.annotator import UniParser
 from pylacoan.helpers import add_wid
 from pylacoan.helpers import get_pos
@@ -22,8 +23,9 @@ from pylacoan.helpers import load_data
 from pylacoan.helpers import printdict
 from pylacoan.helpers import render_graid
 from pylacoan.helpers import run_pipeline
-from conf import AUDIO_PATH
-from flask import g
+from pylacoan.search import CorpusFrame
+
+
 AUDIO_PATH = Path(AUDIO_PATH)
 
 log = logging.getLogger(__name__)
@@ -76,6 +78,7 @@ def parse_graid(df, aligned_fields, target="all"):
         )
         yield ex
 
+
 fields = {x["key"]: x for x in pipeline if isinstance(x, dict)}
 
 data = load_data(
@@ -119,7 +122,7 @@ if "graid" in data.columns:
     data = pd.DataFrame.from_dict(parse_graid(data, aligned_fields))
 for text_id, textdata in data.groupby("txt"):
     texts[text_id] = list(textdata.index)
-    
+
 
 def save():
     for key, field in fields.items():
@@ -304,9 +307,9 @@ def text_view(text_id):
     return render_template("annotation.html", text_id=text_id)
 
 
-
-
-conc_fields = {x["key"]: x for x in pipeline if isinstance(x, dict) and x["lvl"] == "word"}
+conc_fields = {
+    x["key"]: x for x in pipeline if isinstance(x, dict) and x["lvl"] == "word"
+}
 
 
 def resolve_regex(s):
@@ -316,6 +319,7 @@ def resolve_regex(s):
         if cand in s:
             return re.compile(s)
     return s
+
 
 @app.route("/concordance")
 def concordance():
@@ -332,6 +336,7 @@ def search():
     query = json.loads(request.args.get("query"))
     df = CorpusFrame("output/full_unsupervised.csv", list_cols=["mid", "grm"])
     return df.query(query, name=None, full_context=True, mode="html")
+
 
 def run_server():
     app.run(debug=True, port=5001)

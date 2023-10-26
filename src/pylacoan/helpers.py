@@ -7,11 +7,11 @@ import pygraid
 import questionary
 from humidifier import humidify
 from pyigt import IGT
+from tqdm import tqdm
+from tqdm import tqdm_pandas
 from writio import dump
 from writio import load
 from pylacoan.config import INPUT_DIR
-from tqdm import tqdm
-from tqdm import tqdm_pandas
 
 
 SEC_JOIN = ","

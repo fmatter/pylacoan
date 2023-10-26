@@ -1,13 +1,13 @@
 import logging
 import re
+import sys
+import jinja2
 import pandas as pd
 import pygraid
-from writio import load
-import sys
 from pyscl import parse
-from writio import dump
 from tqdm import tqdm
-import jinja2
+from writio import dump
+from writio import load
 
 
 log = logging.getLogger(__name__)
@@ -229,7 +229,8 @@ class CorpusFrame(pd.DataFrame):
         post = slice(end + 1, postto)
         if mode == "rich":
             conc_dict = {
-                "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>"""f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>""",
+                "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>"""
+                f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>""",
                 # "Record": record["rec"],
                 "Pre": " ".join(
                     [
