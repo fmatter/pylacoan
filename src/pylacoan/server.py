@@ -5,10 +5,10 @@ from pathlib import Path
 import pandas as pd
 import pygraid
 from conf import AUDIO_PATH
+from pylacoan.config import OUTPUT_DIR
 from conf import pipeline
 from conf import pos_list
 from flask import Flask
-from flask import g
 from flask import render_template
 from flask import request
 from flask import send_from_directory
@@ -20,7 +20,6 @@ from pylacoan.helpers import get_pos
 from pylacoan.helpers import insert_pos_rec
 from pylacoan.helpers import load_annotations
 from pylacoan.helpers import load_data
-from pylacoan.helpers import printdict
 from pylacoan.helpers import render_graid
 from pylacoan.helpers import run_pipeline
 from pylacoan.search import CorpusFrame
@@ -176,6 +175,15 @@ def graid_string():
 @app.route("/audio/<path:filename>")
 def audio(filename):
     return send_from_directory(AUDIO_PATH, filename)
+
+
+@app.route("/data")
+def get_output():
+    res = []
+    for f in Path(OUTPUT_DIR).iterdir():
+        if f.suffix==".csv":
+            res.append(f.name)
+    return res
 
 
 @app.route("/texts")

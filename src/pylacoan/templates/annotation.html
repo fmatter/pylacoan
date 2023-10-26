@@ -55,23 +55,25 @@
     <script src="{{url_for('static', filename='js/scripts.js')}}"></script>
     <script src="{{url_for('static', filename='js/annotation.js')}}"></script>
     <script>
-      $.get({
-        url: "/texts",
-        async: false,
-        success: function (textIDs) {
-          for (let i = 0; i < textIDs.length; i++) {
-        // $("#textlist").append('<a id='+textIDs[i]+' class="textLink list-group-item list-group-item-action list-group-item-light p-3" href="#!">'+textIDs[i]+'</a>')
-            $("#textlist").append(
-                                  `<a class="list-group-item list-group-item-action list-group-item-light p-3" href="/annotation/${textIDs[i]}">${textIDs[i]}</a>`,
-                                  );
+        $.get(
+        {
+            url: "/texts",
+            async: false,
+            success: function (textIDs) {
+                for (let i = 0; i < textIDs.length; i++) {
+                        // $("#textlist").append('<a id='+textIDs[i]+' class="textLink list-group-item list-group-item-action list-group-item-light p-3" href="#!">'+textIDs[i]+'</a>')
+                    $("#textlist").append(
+                                          `<a class="list-group-item list-group-item-action list-group-item-light p-3" href="/annotation/${textIDs[i]}">${textIDs[i]}</a>`,
+                                          );
+                }
+                if ("{{text_id}}" != "") {
+                    loadText("{{text_id}}");
+                } else {
+                    loadText(textIDs[0]);
+                }
+            },
         }
-        if ("{{text_id}}" != "") {
-            loadText("{{text_id}}");
-        } else {
-            loadText(textIDs[0]);
-        }
-    },
-});
-</script>
+        );
+    </script>
 </body>
 </html>
