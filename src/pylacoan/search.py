@@ -8,7 +8,7 @@ from pyscl import parse
 from tqdm import tqdm
 from writio import dump
 from writio import load
-
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class CorpusFrame(pd.DataFrame):
         list_cols=None,
         **kwargs,
     ):
-        if isinstance(data, str):
+        if isinstance(data, str) or isinstance(data, Path):
             data = self.read_csv(data)
         self.aligned_cols = [x for x in self.aligned_cols if x in data.columns]
         if "graid" not in data.columns:
