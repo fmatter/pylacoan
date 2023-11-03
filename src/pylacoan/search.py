@@ -424,6 +424,9 @@ class CorpusFrame(pd.DataFrame):
                 dump(res, f"concordances/{name}.html")
         if bare_kwics and csv:
             dump(bare_kwics, f"concordances/{name}.csv")
-        if len(kwics) > 0 and mode == "html":
-            return kwics.to_html(index=False, escape=False)
+        if len(kwics) > 0:
+            if mode == "html":
+                return kwics.to_html(index=False, escape=False)
+            elif mode == "pandas":
+                return pd.DataFrame.from_dict(bare_kwics)
         return f"No results for '{query_string}'"
