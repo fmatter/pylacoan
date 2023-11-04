@@ -181,7 +181,7 @@ def audio(filename):
 def get_output():
     res = []
     for f in Path(OUTPUT_DIR).iterdir():
-        if f.suffix==".csv":
+        if f.suffix == ".csv":
             res.append(f.name)
     return res
 
@@ -343,7 +343,7 @@ def get_conc_fields():
 def search():
     query = json.loads(request.args.get("query"))
     df = CorpusFrame("output/full_unsupervised.csv", list_cols=["mid", "grm"])
-    return df.query(query, name=None, full_context=True, mode="html")
+    return df.query(query, name=None, mode="rich")
 
 
 def run_server():

@@ -27,6 +27,7 @@ cldf_dict = {
     "Speaker_ID": "spk",
     "Text_ID": "txt",
     "Translated_Text": "ftr",
+    "Language_ID": "lng",
 }
 
 
@@ -46,11 +47,10 @@ def empty_object(ann):
 class CorpusFrame(pd.DataFrame):
     searchcol = "Object"
     annotated_cols = ["refind", "graid"]
-    search_cols = []
     clause_list = []
     graid = None
     current_clause = None
-    record_level = ["rec", "spk", "txt"]
+    record_level = ["rec", "spk", "txt", "lng"]
     graid_cols = ["type", "syn", "anim", "ref", "pred", "form", "func"]
     aligned_cols = [
         "obj",
@@ -61,6 +61,8 @@ class CorpusFrame(pd.DataFrame):
         "mid",
         "wid",
     ]
+    other_cols = ["lng"]
+    conc_dir = Path("concordances")
 
     def __init__(
         self,
@@ -73,11 +75,9 @@ class CorpusFrame(pd.DataFrame):
         if isinstance(data, str) or isinstance(data, Path):
             data = self.read_csv(data)
         self.aligned_cols = [x for x in self.aligned_cols if x in data.columns]
-        if "graid" not in data.columns:
-            self.search_cols = self.aligned_cols
-        else:
+        self.other_cols = [x for x in self.other_cols if x in data.columns]
+        if "graid" in data.columns:
             self.aligned_cols = self.aligned_cols + self.annotated_cols
-            self.search_cols = self.aligned_cols + self.graid_cols
         if not separate_clitics:
             self.aligned_cols.append("srf")
 
@@ -318,6 +318,7 @@ class CorpusFrame(pd.DataFrame):
     #     wi += 1
     # return rec
 
+
     def pprint(self, dic):
         from terminaltables import AsciiTable
 
@@ -336,20 +337,26 @@ class CorpusFrame(pd.DataFrame):
         # print(rec["grm"], rec["pos"], sep="\n")
         # self.pprint(rec)
         cols = [x for x in cols if x in rec]
-        assert len(rec["grm"]) == len(rec["obj"])
-        for idx in range(0, len(rec[cols[0]])):
-            yield idx, {k: rec[k][idx] for k in cols}
+        try:
+            for idx in range(0, len(rec[cols[0]])):
+                yield idx, {k: rec[k][idx] for k in cols}
+        except IndexError:
+            handle = rec.get(
+                "ID", rec.get("id", rec.get("rec", rec[list(rec.keys())[0]]))
+            )
+            log.warning(f"Inconsistent alignment: {handle}")
 
     def query(
         self,
         query_string,
         name=None,
-        html=True,
-        csv=False,
-        mode="pandas",
+        mode="bare",
+        conc_mode="html",
+        write=False,
         add_col=["mid", "grm"],
         **kwargs,
     ):
+        add_col = [x for x in add_col if x in self.columns]
         tokens = parse(query_string)
         if name:
             print(f"Name: {name}")
@@ -367,9 +374,9 @@ class CorpusFrame(pd.DataFrame):
         for i, rec in enumerate(self.to_dict("records")):
             rec_dics[i] = []
             for idx, dic in self.iter_words(rec, self.aligned_cols):
-                rec_dics[i].append({**dic, **{"idx": idx, "i": i}})
+                other_dic = {col: rec[col] for col in self.record_level if col in rec}
+                rec_dics[i].append({**dic, **{"idx": idx, "i": i}, **other_dic})
         kwics = []
-        bare_kwics = []
         for rec_idx, word_dics in rec_dics.items():
             start = None
             i = 0
@@ -387,18 +394,24 @@ class CorpusFrame(pd.DataFrame):
                     if j == len(tokens) - 1:
                         # print(self.iloc[rec_idx])
                         # print(f"Hit at {rec_idx}:{start}-{i} ({j})")
-                        kwics.append(
-                            self.build_conc_line(self.iloc[rec_idx], start=start, end=i)
-                        )
-                        bare_kwics.append(
-                            self.build_conc_line(
-                                self.iloc[rec_idx],
-                                start=start,
-                                end=i,
-                                mode="bare",
-                                add_col=add_col,
+                        if mode == "rich":
+                            kwics.append(
+                                self.build_conc_line(
+                                    self.iloc[rec_idx], start=start, end=i
+                                )
                             )
-                        )
+                        elif mode == "bare":
+                            kwics.append(
+                                self.build_conc_line(
+                                    self.iloc[rec_idx],
+                                    start=start,
+                                    end=i,
+                                    mode="bare",
+                                    add_col=add_col,
+                                )
+                            )
+                        else:
+                            raise ValueError(mode)
                         j = 0
                         start = None
                     else:
@@ -411,22 +424,25 @@ class CorpusFrame(pd.DataFrame):
 
         if kwics:
             kwics = pd.DataFrame(kwics)
-            if html and name:
-                loader = jinja2.FileSystemLoader(searchpath="concserve/templates/")
-                env = jinja2.Environment(loader=loader)
-                template = env.get_template("view.j2")
-                res = template.render(
-                    {
-                        "content": kwics.to_html(index=False, escape=False),
-                        "legend": f"Search results for {roundtrip}",
-                    }
-                )
-                dump(res, f"concordances/{name}.html")
-        if bare_kwics and csv:
-            dump(bare_kwics, f"concordances/{name}.csv")
-        if len(kwics) > 0:
-            if mode == "html":
-                return kwics.to_html(index=False, escape=False)
-            elif mode == "pandas":
-                return pd.DataFrame.from_dict(bare_kwics)
+            if conc_mode=="html":
+                # loader = jinja2.FileSystemLoader(searchpath="concserve/templates/")
+                # env = jinja2.Environment(loader=loader)
+                # template = env.get_template("view.j2")
+                # res = template.render(
+                #     {
+                #         "content": kwics.to_html(index=False, escape=False),
+                #         "legend": f"Search results for {roundtrip}",
+                #     }
+                # )
+                res = kwics.to_html(index=False, escape=False)
+                if name:
+                    self.conc_dir.mkdir(exist_ok=True, parents=True)
+                    dump(res, f"{self.conc_dir}/{name}.html")
+                return res
+            elif conc_mode=="csv":
+                self.conc_dir.mkdir(exist_ok=True, parents=True)
+                if name:
+                    dump(kwics, f"{self.conc_dir}/{name}.csv")
+                return kwics
+        log.warning(f"No results for '{query_string}'")
         return f"No results for '{query_string}'"
