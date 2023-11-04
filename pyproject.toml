@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pylacoan"
-version = "0.0.3"
+version = "0.0.4.dev"
 description = "Plug-and-play language corpus annotation."
 authors = ["Florian Matter <flmt@mailbox.org>"]
 license = "Apache-2.0"
