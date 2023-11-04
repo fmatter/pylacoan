@@ -9,7 +9,7 @@ from pyscl import parse
 from tqdm import tqdm
 from writio import dump
 from writio import load
-
+from conf import REC_LINK
 
 log = logging.getLogger(__name__)
 
@@ -214,8 +214,11 @@ class CorpusFrame(pd.DataFrame):
         return graid_recs
 
     def _tooltip(self, record, i, target_col):
-        content = "&#013".join([f"{k}: {record[k][i]}" for k in self.aligned_cols])
-        return f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{content}">{record[target_col][i]}</span>"""
+        try:
+            content = "&#013".join([f"{k}: {record[k][i]}" for k in self.aligned_cols])
+            return f"""<span class="content show-tooltip" style="white-space: pre-line;" data-html="true" data-toggle="tooltip" data-placement="top" title="{content}">{record[target_col][i]}</span>"""
+        except IndexError:
+            return ""
 
     def build_conc_line(
         self, record, start, end, context=5, target_col="obj", add_col=None, mode="rich"
@@ -230,10 +233,15 @@ class CorpusFrame(pd.DataFrame):
             postto = len(record[target_col])
         post = slice(end + 1, postto)
         if mode == "rich":
+            link = REC_LINK.format(rec_id=record["rec"])
+            if link:
+                rec_text = f"""<a href="{link}">{record["rec"]}</a>"""
+            else:
+                rec_text = record["rec"]
+            if "txt" in record:
+                rec_text+= " " + f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>"""
             conc_dict = {
-                "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>"""
-                f"""<a href="http://localhost:5001/annotation/{record.get("txt", "blank")}#{record["rec"]}">🖉</a>""",
-                # "Record": record["rec"],
+                "Record": rec_text,
                 "Pre": " ".join(
                     [
                         self._tooltip(record, i, target_col)
