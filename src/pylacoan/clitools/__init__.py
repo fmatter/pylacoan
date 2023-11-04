@@ -1,8 +1,5 @@
-from pylacoan.config import INPUT_DIR
-from pylacoan.config import OUTPUT_DIR
-from pylacoan.helpers import get_pos
-from pylacoan.helpers import load_data
-from pylacoan.helpers import run_pipeline
+from pylacoan.config import INPUT_DIR, OUTPUT_DIR
+from pylacoan.helpers import get_pos, load_data, run_pipeline
 
 
 def parse_df(parser_list, out_f, df, interactive):

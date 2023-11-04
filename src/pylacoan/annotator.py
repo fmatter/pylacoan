@@ -2,15 +2,13 @@ import logging
 import re
 import time
 from pathlib import Path
-import pandas as pd
-from segments import Profile
-from segments import Tokenizer
-from writio import dump
-from writio import load
-from pylacoan.config import ID_KEY
-from pylacoan.helpers import printdict
-from pylacoan.helpers import uniparser_fields
 
+import pandas as pd
+from segments import Profile, Tokenizer
+from writio import dump, load
+
+from pylacoan.config import ID_KEY
+from pylacoan.helpers import printdict, uniparser_fields
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

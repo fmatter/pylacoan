@@ -2,28 +2,26 @@ import json
 import logging
 import re
 from pathlib import Path
+
 import pandas as pd
 import pygraid
-from conf import AUDIO_PATH
-from conf import pipeline
-from conf import pos_list
-from flask import Flask
-from flask import render_template
-from flask import request
-from flask import send_from_directory
+from conf import AUDIO_PATH, pipeline, pos_list
+from flask import Flask, render_template, request, send_from_directory
 from flask_bootstrap import Bootstrap5
 from writio import dump
+
 from pylacoan.annotator import UniParser
 from pylacoan.config import OUTPUT_DIR
-from pylacoan.helpers import add_wid
-from pylacoan.helpers import get_pos
-from pylacoan.helpers import insert_pos_rec
-from pylacoan.helpers import load_annotations
-from pylacoan.helpers import load_data
-from pylacoan.helpers import render_graid
-from pylacoan.helpers import run_pipeline
+from pylacoan.helpers import (
+    add_wid,
+    get_pos,
+    insert_pos_rec,
+    load_annotations,
+    load_data,
+    render_graid,
+    run_pipeline,
+)
 from pylacoan.search import CorpusFrame
-
 
 AUDIO_PATH = Path(AUDIO_PATH)
 

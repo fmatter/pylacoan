@@ -2,14 +2,14 @@ import logging
 import re
 import sys
 from pathlib import Path
+
 import jinja2
 import pandas as pd
 import pygraid
+from conf import REC_LINK
 from pyscl import parse
 from tqdm import tqdm
-from writio import dump
-from writio import load
-from conf import REC_LINK
+from writio import dump, load
 
 log = logging.getLogger(__name__)
 
@@ -239,7 +239,10 @@ class CorpusFrame(pd.DataFrame):
             else:
                 rec_text = record["rec"]
             if "txt" in record:
-                rec_text+= " " + f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>"""
+                rec_text += (
+                    " "
+                    + f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>"""
+                )
             conc_dict = {
                 "Record": rec_text,
                 "Pre": " ".join(

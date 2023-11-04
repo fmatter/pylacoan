@@ -1,20 +1,21 @@
 import logging
 from pathlib import Path
+
 import pygraid
 import questionary
 from humidifier import humidify
-from writio import dump
-from writio import load
-from pylacoan.annotator import Annotator
-from pylacoan.config import GRAID_KEY
-from pylacoan.config import ID_KEY
-from pylacoan.helpers import choose_from_list
-from pylacoan.helpers import favorite
-from pylacoan.helpers import highlight_list
-from pylacoan.helpers import human_sort
-from pylacoan.helpers import pad_ex
-from pylacoan.helpers import print_record
+from writio import dump, load
 
+from pylacoan.annotator import Annotator
+from pylacoan.config import GRAID_KEY, ID_KEY
+from pylacoan.helpers import (
+    choose_from_list,
+    favorite,
+    highlight_list,
+    human_sort,
+    pad_ex,
+    print_record,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

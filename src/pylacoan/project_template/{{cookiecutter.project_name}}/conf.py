@@ -1,8 +1,11 @@
-from pylacoan import Cleaner, Tokenizer, UniParser
-from uniparser_yawarana import YawaranaAnalyzer, pos_list
-from yawarana_helpers import pos_list
-from writio import load
 from pathlib import Path
+
+from uniparser_yawarana import YawaranaAnalyzer, pos_list
+from writio import load
+from yawarana_helpers import pos_list
+
+from pylacoan import Cleaner, Tokenizer, UniParser
+
 conf = load("conf.yaml")
 label = conf["mode"]
 conf = conf[label]
@@ -69,7 +72,8 @@ if conf.get("graid"):
             "lvl": "word",
             "edit": True,
             "key": "graid",
-        })
+        }
+    )
     pipeline.append(
         {
             "file": "refind.yaml",
@@ -92,6 +96,4 @@ REC_LINK = "http://localhost:6543/sentences/{rec_id}"
 INPUT_FILE = "all"
 OUTPUT_FILE = f"{label}.csv"
 FILTER = conf.get("filters", {})
-AUDIO_PATH = Path(
-    "/home/florianm/Dropbox/research/cariban/yawarana/corpus/audio"
-)
+AUDIO_PATH = Path("/home/florianm/Dropbox/research/cariban/yawarana/corpus/audio")

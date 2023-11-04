@@ -2,17 +2,16 @@ import logging
 import re
 from collections import Counter
 from pathlib import Path
+
 import pandas as pd
 import pygraid
 import questionary
 from humidifier import humidify
 from pyigt import IGT
-from tqdm import tqdm
-from tqdm import tqdm_pandas
-from writio import dump
-from writio import load
-from pylacoan.config import INPUT_DIR
+from tqdm import tqdm, tqdm_pandas
+from writio import dump, load
 
+from pylacoan.config import INPUT_DIR
 
 SEC_JOIN = ","
 
