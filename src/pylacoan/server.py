@@ -5,7 +5,6 @@ from pathlib import Path
 import pandas as pd
 import pygraid
 from conf import AUDIO_PATH
-from pylacoan.config import OUTPUT_DIR
 from conf import pipeline
 from conf import pos_list
 from flask import Flask
@@ -15,6 +14,7 @@ from flask import send_from_directory
 from flask_bootstrap import Bootstrap5
 from writio import dump
 from pylacoan.annotator import UniParser
+from pylacoan.config import OUTPUT_DIR
 from pylacoan.helpers import add_wid
 from pylacoan.helpers import get_pos
 from pylacoan.helpers import insert_pos_rec
@@ -89,38 +89,39 @@ data = load_data(
     }
 )
 
-uniparser = None
-for p in pipeline:
-    if isinstance(p, UniParser):
-        uniparser = p
+if data is not None:
+    uniparser = None
+    for p in pipeline:
+        if isinstance(p, UniParser):
+            uniparser = p
 
-annotations = {}
-data = run_pipeline(data, annotations, pipeline, pos_list)
-data.index = data["ID"]
-audios = []
-for x in AUDIO_PATH.iterdir():
-    audios.append(x.stem)
-data["audio"] = data["ID"].apply(lambda x: x in audios)
-splitcols = [
-    "obj",
-    "gls",
-    # "grm",
-    "graid",
-    "refind",
-    # "lex",
-    # "mid",
-    "pos",
-    # "wid",
-    # "ana",
-    # "anas",
-    "srf",
-]
-aligned_fields = [x for x in splitcols if x not in []]
-texts = {}
-if "graid" in data.columns:
-    data = pd.DataFrame.from_dict(parse_graid(data, aligned_fields))
-for text_id, textdata in data.groupby("txt"):
-    texts[text_id] = list(textdata.index)
+    annotations = {}
+    data = run_pipeline(data, annotations, pipeline, pos_list)
+    data.index = data["ID"]
+    audios = []
+    for x in AUDIO_PATH.iterdir():
+        audios.append(x.stem)
+    data["audio"] = data["ID"].apply(lambda x: x in audios)
+    splitcols = [
+        "obj",
+        "gls",
+        # "grm",
+        "graid",
+        "refind",
+        # "lex",
+        # "mid",
+        "pos",
+        # "wid",
+        # "ana",
+        # "anas",
+        "srf",
+    ]
+    aligned_fields = [x for x in splitcols if x not in []]
+    texts = {}
+    if "graid" in data.columns:
+        data = pd.DataFrame.from_dict(parse_graid(data, aligned_fields))
+    for text_id, textdata in data.groupby("txt"):
+        texts[text_id] = list(textdata.index)
 
 
 def save():
@@ -341,8 +342,11 @@ def get_conc_fields():
 
 @app.route("/search")
 def search():
+    print(request.args.get("query"))
+    print(request.args.get("filename"))
     query = json.loads(request.args.get("query"))
-    df = CorpusFrame("output/full_unsupervised.csv", list_cols=["mid", "grm"])
+    filename = json.loads(request.args.get("filename"))
+    df = CorpusFrame(f"output/{filename}", list_cols=["mid", "grm"])
     return df.query(query, name=None, mode="rich")
 
 

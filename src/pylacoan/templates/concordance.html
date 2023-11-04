@@ -19,7 +19,7 @@
         <!-- Sidebar-->
         <div class="border-end bg-white" id="sidebar-wrapper">
             <div class="sidebar-heading border-bottom bg-light">pylacoan</div>
-            <div class="flist-group list-group-flush" id="filelist"></div>
+            <div class="list-group list-group-flush" id="filelist"></div>
         </div>
         <!-- Page content wrapper-->
         <div id="page-content-wrapper">
@@ -65,28 +65,5 @@
 <!-- Core theme JS-->
 <script src="{{url_for('static', filename='js/scripts.js')}}"></script>
 <script src="{{url_for('static', filename='js/concordance.js')}}"></script>
-
-<script type="text/javascript">
-    $.get(
-        {
-            url: "/data",
-            async: false,
-            success: function (dataFiles) {
-                for (let i = 0; i < dataFiles.length; i++) {
-                        // $("#textlist").append('<a id='+textIDs[i]+' class="textLink list-group-item list-group-item-action list-group-item-light p-3" href="#!">'+textIDs[i]+'</a>')
-                    $("#filelist").append(
-                                          `<a class="list-group-item list-group-item-action list-group-item-light p-3" href="/concordance/${dataFiles[i]}">${dataFiles[i]}</a>`,
-                                          );
-                }
-                // if ("{{data_file}}" != "") {
-                //     loadText("{{data_file}}");
-                // } else {
-                //     loadText(dataFiles[0]);
-                // }
-            },
-        }
-        );
-
-</script>
 </body>
 </html>

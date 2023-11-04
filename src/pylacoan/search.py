@@ -1,6 +1,7 @@
 import logging
 import re
 import sys
+from pathlib import Path
 import jinja2
 import pandas as pd
 import pygraid
@@ -8,7 +9,7 @@ from pyscl import parse
 from tqdm import tqdm
 from writio import dump
 from writio import load
-from pathlib import Path
+
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +102,8 @@ class CorpusFrame(pd.DataFrame):
             self.graid = graid_data
         if list_cols:
             for col in list_cols:
-                data[col] = data[col].apply(lambda x: [y.split(",") for y in x])
+                if col in data.columns:
+                    data[col] = data[col].apply(lambda x: [y.split(",") for y in x])
         super().__init__(data, **kwargs)
 
     def read_csv(self, csv_file):
@@ -230,7 +232,7 @@ class CorpusFrame(pd.DataFrame):
         if mode == "rich":
             conc_dict = {
                 "Record": f"""<a href="http://localhost:6543/sentences/{record["rec"]}">{record["rec"]}</a>"""
-                f"""<a href="http://localhost:5001/annotation/{record["txt"]}#{record["rec"]}">🖉</a>""",
+                f"""<a href="http://localhost:5001/annotation/{record.get("txt", "blank")}#{record["rec"]}">🖉</a>""",
                 # "Record": record["rec"],
                 "Pre": " ".join(
                     [
@@ -317,7 +319,6 @@ class CorpusFrame(pd.DataFrame):
     #                         rec[gcol].append(ann_dict.get(gcol, ""))
     #     wi += 1
     # return rec
-
 
     def pprint(self, dic):
         from terminaltables import AsciiTable
@@ -424,7 +425,7 @@ class CorpusFrame(pd.DataFrame):
 
         if kwics:
             kwics = pd.DataFrame(kwics)
-            if conc_mode=="html":
+            if conc_mode == "html":
                 # loader = jinja2.FileSystemLoader(searchpath="concserve/templates/")
                 # env = jinja2.Environment(loader=loader)
                 # template = env.get_template("view.j2")
@@ -439,7 +440,7 @@ class CorpusFrame(pd.DataFrame):
                     self.conc_dir.mkdir(exist_ok=True, parents=True)
                     dump(res, f"{self.conc_dir}/{name}.html")
                 return res
-            elif conc_mode=="csv":
+            elif conc_mode == "csv":
                 self.conc_dir.mkdir(exist_ok=True, parents=True)
                 if name:
                     dump(kwics, f"{self.conc_dir}/{name}.csv")

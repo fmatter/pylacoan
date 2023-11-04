@@ -38,6 +38,8 @@ def load_data(rename={}, filter_params={}):
     dfs = []
     for file in INPUT_DIR.glob("*.csv"):
         dfs.append(load(file, index_col="ID"))
+    if not dfs:
+        return None
     data = pd.concat(dfs)
     for k, v in filter_params.items():
         if isinstance(v, list):
